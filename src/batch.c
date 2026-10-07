@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCH.C
-**  IDENT:		X-01-34
-**  REV:		01.34.00
+**  IDENT:		X-01-35
+**  REV:		01.35.00
 **
 **  FACILITY:		BATCH
 **
@@ -198,6 +198,12 @@
 **				/AFTER became negatable for it, and are read by CLI$PRESENT so that /NOHOLD
 **				is told from /HOLD; SUBMIT disregards the negated forms as it does every
 **				qualifier that is not its own.
+**
+**	 7-OCT-2026	RRL	X-01-35	The HELP command looks for its topics under the facility key BATCH, where
+**				the library has been rooted since X-01-09 of the kit, and falls back to the
+**				top of the library: HELP SUBMIT had answered NOSUCHTOPIC everywhere the new
+**				library was installed, and the smoke test had passed only where an older
+**				library was still lying in the place it is looked for first.
 **--
 */
 
@@ -237,8 +243,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCH"
-#define	__IDENT__	"X-01-34"
-#define	__REV__		"01.34.00"
+#define	__IDENT__	"X-01-35"
+#define	__REV__		"01.35.00"
 
 #define	BATCH$K_MINABBR	2				/* Shortest admissible abbreviation of a qualifier 			*/
 
@@ -2458,6 +2464,52 @@ int		l_fd;
 /*
 **++
 **  FUNCTIONAL DESCRIPTION:
+**	Walks a run of topic names down the help library from one topic.
+**
+**  INPUT PARAMETERS:
+**	a_lib	  - the open library.
+**	a_start	  - the topic to start under, -1 for the top of the library.
+**	a_wordcnt - number of topic names.
+**	a_words	  - the topic names.
+**
+**  OUTPUT PARAMETERS:
+**	a_index	  - the topic the last name found reached.
+**
+**  RETURNS:
+**	The number of names consumed; a_wordcnt when the whole run was found.
+**--
+*/
+static	int	s_batch$help_walk (
+			HLB$LIB *	a_lib,
+			int		a_start,
+			int		a_wordcnt,
+			char **		a_words,
+			int *		a_index
+			)
+{
+int	l_i, l_used = 0, l_parent;
+
+	*a_index = a_start;
+
+	/*
+	**  A key may carry blanks, so a run of words is offered at once and the routine says how many
+	**  of them it took; what remains names a subtopic of what was found.
+	*/
+	for ( l_i = 0, l_parent = a_start; l_i < a_wordcnt; l_i += l_used, l_parent = *a_index )
+		{
+		if ( $IS_FAILURE(hlb$lookup_run(a_lib, l_parent, a_wordcnt - l_i, &a_words[l_i], &l_used, a_index)) )
+			break;
+
+		if ( !l_used )
+			l_used = 1;
+		}
+
+	return	l_i;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
 **	Displays a topic of the help library of this subsystem.
 **
 **	The library is read through the API of the HELP facility rather than by spawning its image:
@@ -2467,6 +2519,10 @@ int		l_fd;
 **	The library is looked for beside the images, then where the software was built to install it,
 **	then in the current directory - which is what lets the tests exercise the command out of a
 **	build tree that has not been installed.
+**
+**	The library is rooted at the facility key BATCH, so the topics named are looked for under it
+**	first, and under the top of the library after that: an older library spilled its verbs into the
+**	top level, and HELP BATCH SUBMIT names the full path.
 **
 **  INPUT PARAMETERS:
 **	a_wordcnt - number of topic names, zero for the whole of the library.
@@ -2490,7 +2546,7 @@ HLB$LIB *	l_lib = NULL;
 HELP$OUT	l_out;
 const char *	l_txt, *l_spec = NULL;
 unsigned	l_len = 0, l_width = 80;
-int		l_index = -1, l_used = 0, l_i, l_null, l_keep, l_parent;
+int		l_index = -1, l_i, l_null, l_keep, l_root = -1;
 
 	/*
 	**  The diagnostics of the facility go to the standard error, and while the places are being
@@ -2530,21 +2586,23 @@ int		l_index = -1, l_used = 0, l_i, l_null, l_keep, l_parent;
 	help$getwinsz(STDOUT_FILENO, &l_width, NULL);
 	help$out_init(&l_out, STDOUT_FILENO, STDIN_FILENO, 0, l_width);
 
+	/* The facility key the library is rooted at - its first topic */
+	if ( $IS_FAILURE(hlb$firstchild(l_lib, -1, &l_root)) )
+		l_root = -1;
+
 	/* No topic named: the root of the library, which is the whole of it */
 	if ( a_wordcnt )
 		{
-		/*
-		**  A key may carry blanks, so a run of words is offered at once and the routine says how
-		**  many of them it took; what remains names a subtopic of what was found.
-		*/
-		for ( l_i = 0, l_parent = -1; l_i < a_wordcnt; l_i += l_used, l_parent = l_index )
-			{
-			if ( $IS_FAILURE(hlb$lookup_run(l_lib, l_parent, a_wordcnt - l_i, &a_words[l_i],
-								&l_used, &l_index)) )
-				break;
+		/* Under the facility key first, then from the top of the library (an older one, or BATCH named) */
+		l_i = s_batch$help_walk(l_lib, l_root, a_wordcnt, a_words, &l_index);
 
-			if ( !l_used )
-				l_used = 1;
+		if ( (l_i < a_wordcnt) && (l_root != -1) )
+			{
+		int	l_j = s_batch$help_walk(l_lib, -1, a_wordcnt, a_words, &l_index);
+
+			if ( l_j < a_wordcnt )
+				l_i = (l_j > l_i) ? l_j : l_i;		/* the furthest either went names the word at fault */
+			else	l_i = l_j;
 			}
 
 		if ( l_i < a_wordcnt )
@@ -2555,7 +2613,7 @@ int		l_index = -1, l_used = 0, l_i, l_null, l_keep, l_parent;
 			return	$PUTMSG_FAO(BATCH$_NOSUCHTOPIC, a_words[l_i]);
 			}
 		}
-	else	hlb$firstchild(l_lib, -1, &l_index);
+	else	l_index = l_root;
 
 	if ( $IS_SUCCESS(hlb$gettext(l_lib, l_index, &l_len, &l_txt)) )
 		help$put_text(&l_out, 2, l_len, l_txt);
