@@ -1,0 +1,39 @@
+/*
+**++
+**  MODULE:		BATCHVERS.H
+**  IDENT:		X-01-02
+**  REV:		01.02.00
+**
+**  FACILITY:		BATCH
+**
+**  ABSTRACT:		Product identification. The module is generated at configuration time from the
+**			template BATCHVERS.H.IN and placed in the build tree; it is not to be edited by
+**			hand. It also carries the default subsystem root directory, which is established
+**			at configuration time by the variable BATCH_K_SPOOLROOT and is therefore not
+**			embedded in the source text, together with the specification of the command
+**			interpreter created for a job.
+**
+**  AUTHOR:		StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+**
+**  CREATION DATE:	28-JUL-2026
+**
+**  MODIFICATION HISTORY:
+**
+**	28-JUL-2026	RRL	X-01-01	Initial revision.
+**
+**	28-JUL-2026	RRL	X-01-02	Comments converted to English.
+**--
+*/
+
+#ifndef	__BATCHVERS_H__
+#define	__BATCHVERS_H__	1
+
+#define	BATCH$K_FACILITY	"@BATCH_CFG_FACILITY@"
+#define	BATCH$K_IDENT		"@BATCH_CFG_IDENT@"
+#define	BATCH$K_VERSION		"@BATCH_CFG_VERSION@"
+#define	BATCH$K_BUILDID		"@BATCH_CFG_BUILDID@"
+#define	BATCH$K_HELPSPEC	"@BATCH_CFG_HELPLIB@"	/* Where the help library is installed */
+#define	BATCH$K_DEFROOT		"@BATCH_CFG_SPOOLROOT@"
+#define	BATCH$K_SHELL		"@BATCH_CFG_SHELL@"
+
+#endif	/* __BATCHVERS_H__ */

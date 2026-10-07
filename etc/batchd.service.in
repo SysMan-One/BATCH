@@ -1,0 +1,51 @@
+#++
+#  MODULE:		batchd.service.in
+#  IDENT:		X-01-01
+#  REV:			01.01.00
+#
+#  FACILITY:		BATCH
+#
+#  ABSTRACT:		Template of the systemd unit for the job controller. CMake fills in the paths at
+#			configuration time and installs the result; the file is not to be edited in
+#			place, since the next installation would overwrite it. To alter the qualifiers
+#			the controller is started with, use a drop-in:
+#
+#			  systemctl edit batchd
+#
+#  AUTHOR:		StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#  CREATION DATE:	29-JUL-2026
+#
+#  MODIFICATION HISTORY:
+#
+#	29-JUL-2026	RRL	X-01-01	Initial revision.
+#--
+#
+
+[Unit]
+Description=@BATCH_CFG_FACILITY@ job controller
+Documentation=file:@BATCH_CFG_DOCDIR@/batch_users_guide.md
+After=local-fs.target
+
+[Service]
+#
+#  The controller is run in the foreground: under a service supervisor there is nothing to detach
+#  from, and its diagnostics then reach the journal of the system rather than a log of its own.
+#
+Type=simple
+ExecStart=@BATCH_CFG_SBINDIR@/batchd /FOREGROUND /ROOT=@BATCH_CFG_SPOOLROOT@
+
+#
+#  Only the controller is signalled when the service is stopped. A job is a session of its own and
+#  is meant to outlive the controller - that is what /RESTART rests upon - so the default of
+#  killing the whole control group would defeat the design of the subsystem.
+#
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

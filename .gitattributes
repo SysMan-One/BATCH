@@ -1,0 +1,25 @@
+#
+#  BATCH - git attributes.
+#
+#  The project uses tabs of width 8 and LF line endings. The attributes below prevent the version
+#  control system from substituting line endings on checkout on another platform, and mark the
+#  sources as text so that merges and diffs behave correctly.
+#
+
+*		text=auto eol=lf
+
+*.c		text diff=cpp
+*.h		text diff=cpp
+*.h.in		text diff=cpp
+*.md		text
+*.sh		text eol=lf
+CMakeLists.txt	text
+.gitignore	text
+.gitattributes	text
+
+contrib/starlet_putmsg/*.patch	-text
+
+#
+#  The rendered manuals are carried with the sources. They are binary and are never converted.
+#
+*.pdf	binary
