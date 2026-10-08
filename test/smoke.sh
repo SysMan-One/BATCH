@@ -1,8 +1,8 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-01-24
-#  REV:			01.24.00
+#  IDENT:		X-01-25
+#  REV:			01.25.00
 #
 #  FACILITY:		BATCH
 #
@@ -90,6 +90,10 @@
 #	 8-SEP-2026	RRL	X-01-24	A check of the SET ENTRY command: an attribute altered in place, the
 #					negated forms, what the state of a job allows, and a command that names
 #					nothing.
+#
+#	 8-OCT-2026	RRL	X-01-25	SHOW without /ALL displays the jobs that wait: check 3 now expects the held
+#					job in the ordinary display, and check 2 is joined by one of a successful
+#					job kept by /RETAIN=ALWAYS, which only /ALL displays.
 #--
 #
 
@@ -267,7 +271,19 @@ l_wait_gone "goodjob" show /all
 l_check $? "successful job removed from the queue"
 
 #
-#  Check 3. The /HOLD qualifier leaves a job in the holding state, invisible without /ALL.
+#  Check 2a. A successful job kept by /RETAIN=ALWAYS is displayed only with /ALL: there is nothing in
+#  its entry to be acted upon, and an ordinary SHOW is the queue as it stands to be worked.
+#
+"${g_batch}" submit "${g_root}/scripts/ok.sh" /NAME=keptjob /RETAIN=ALWAYS '/PARAMETERS=(alpha)' >/dev/null 2>&1
+l_wait_for "keptjob .*exit=0" show /all
+"${g_batch}" show      > "${g_root}/show2a.txt" 2>&1
+"${g_batch}" show /all > "${g_root}/show2b.txt" 2>&1
+
+grep -q "keptjob" "${g_root}/show2b.txt" && ! grep -q "keptjob" "${g_root}/show2a.txt"
+l_check $? "successful job kept by /RETAIN=ALWAYS shown only with /ALL"
+
+#
+#  Check 3. The /HOLD qualifier leaves a job in the holding state, displayed with and without /ALL.
 #
 l_ent=$("${g_batch}" submit "${g_root}/scripts/long.sh" /NAME=heldjob /HOLD 2>/dev/null \
 		| sed -n 's/.*entry \([0-9]*\).*/\1/p')
@@ -276,8 +292,8 @@ l_ent=$("${g_batch}" submit "${g_root}/scripts/long.sh" /NAME=heldjob /HOLD 2>/d
 "${g_batch}" show      > "${g_root}/show4.txt" 2>&1
 
 grep -q "heldjob" "${g_root}/show3.txt" && grep -q "Holding" "${g_root}/show3.txt" \
-	&& ! grep -q "heldjob" "${g_root}/show4.txt"
-l_check $? "job submitted with /HOLD is holding and shown only with /ALL"
+	&& grep "heldjob" "${g_root}/show4.txt" | grep -q "Holding"
+l_check $? "job submitted with /HOLD is holding and shown without /ALL"
 
 #
 #  Check 4. An /AFTER time in the future likewise yields the holding state.

@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-01-31
-**  REV:		01.31.00
+**  IDENT:		X-01-32
+**  REV:		01.32.00
 **
 **  FACILITY:		BATCH
 **
@@ -238,6 +238,11 @@
 **				altered while it waits and not once it runs; what decides what becomes of
 **				it afterwards may be altered until it is over. A retained entry is not
 **				altered at all: nothing about it is still to be decided.
+**
+**	 8-OCT-2026	RRL	X-01-32	SHOW without /ALL displays the jobs that wait as well - PENDING and HOLDING
+**				- and leaves out only the entry kept after a job that succeeded, which /ALL
+**				adds. A job held until next week had been invisible to an ordinary SHOW, and
+**				a queue that seemed to have lost its weekly job had it all the while.
 **--
 */
 
@@ -276,8 +281,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-01-31"
-#define	__REV__		"01.31.00"
+#define	__IDENT__	"X-01-32"
+#define	__REV__		"01.32.00"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/
@@ -1830,7 +1835,8 @@ static	int	s_batchd$exithint (
 **	its log is deleted unless /KEEP was given. A job that returned a nonzero status or was
 **	terminated by a signal is moved to RETAINED and remains visible to the SHOW command without the
 **	/ALL qualifier. This is what produces the required behaviour: an ordinary SHOW displays the
-**	jobs that are executing and the jobs that failed.
+**	jobs that are executing or waiting and the jobs that failed; an entry kept after a success is
+**	displayed only with /ALL.
 **
 **  INPUT PARAMETERS:
 **	None.
@@ -2415,7 +2421,12 @@ unsigned int	l_st;
 	if ( a_req->sr_entry )
 		return	(a_job->jb_entry == a_req->sr_entry) ? BATCH$_NORMAL : BATCH$_NOSUCHENT;
 
-	if ( (!(a_req->sr_flags & SHOW$M_ALL)) && ((l_st == JOB$K_PENDING) || (l_st == JOB$K_HOLDING)) )
+	/*
+	**  Without /ALL the queue is shown as it stands to be worked: what runs, what waits to run and
+	**  what failed. The one thing left out is an entry kept after a job that succeeded - it is there
+	**  only because /RETAIN=ALWAYS asked for it, and there is nothing in it to be acted upon.
+	*/
+	if ( (!(a_req->sr_flags & SHOW$M_ALL)) && (l_st == JOB$K_RETAINED) && (!a_job->jb_exit) && (!a_job->jb_signal) )
 		return	BATCH$_NOSUCHENT;
 
 	return	BATCH$_NORMAL;
@@ -2426,8 +2437,9 @@ unsigned int	l_st;
 **  FUNCTIONAL DESCRIPTION:
 **	Builds the reply to an IPC$K_SHOW request in memory. The selection rule is:
 **
-**	  without /ALL : EXECUTING, ABORTING and RETAINED, that is, the active and the failed jobs;
-**	  with    /ALL : PENDING and HOLDING in addition.
+**	  without /ALL : PENDING, HOLDING, EXECUTING, ABORTING and the RETAINED entries of the jobs that
+**			 failed, that is, the queue as it stands to be worked;
+**	  with    /ALL : the RETAINED entries of the jobs that succeeded (/RETAIN=ALWAYS) in addition.
 **
 **	Jobs of other users are supplied only when the SHOW$M_EVERYONE indicator is set. The full
 **	format /FULL has no effect on the selection: the controller always supplies the complete

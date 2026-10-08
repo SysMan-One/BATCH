@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.C
-**  IDENT:		X-01-12
-**  REV:		01.12.00
+**  IDENT:		X-01-13
+**  REV:		01.13.00
 **
 **  FACILITY:		BATCH
 **
@@ -63,6 +63,9 @@
 **
 **	 8-SEP-2026	RRL	X-01-12	Texts of BATCH$_ENTMODIFIED, BATCH$_NOTMODIFIABLE and BATCH$_NOTHINGSET
 **				added for the SET ENTRY command.
+**
+**	 8-OCT-2026	RRL	X-01-13	Text of BATCH$_NOJOBS follows the selection of SHOW without /ALL, which
+**				takes in the jobs that wait (BATCHD.C X-01-32).
 **--
 */
 
@@ -75,8 +78,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-01-12"
-#define	__REV__		"01.12.00"
+#define	__IDENT__	"X-01-13"
+#define	__REV__		"01.13.00"
 
 /*
 **  A single row of the message table. The text is held in an ASCIC container, so its length is
@@ -164,7 +167,7 @@ static	EMSG_RECORD	s_msgtab [] =
 	$MSGREC(BATCH$_NOSUCHQUE,	"NOSUCHQUE, there is no queue named !AZ"					),
 	$MSGREC(BATCH$_QUEPAUSED,	"QUEPAUSED, queue !AZ is paused"						),
 	$MSGREC(BATCH$_QUERESUMED,	"QUERESUMED, queue !AZ is resumed"						),
-	$MSGREC(BATCH$_NOJOBS,		"NOJOBS, no executing or abnormally terminated job in the queue"		),
+	$MSGREC(BATCH$_NOJOBS,		"NOJOBS, no job executing, waiting or failed in the queue"			),
 	$MSGREC(BATCH$_EMPTYQUE,	"EMPTYQUE, the queue holds no jobs"						),
 	$MSGREC(BATCH$_SYNCDONE,	"SYNCDONE, job !UL completed"							),
 	$MSGREC(BATCH$_SYNCFAIL,	"SYNCFAIL, job !UL ended with !AZ"						),

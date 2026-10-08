@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHIPC.H
-**  IDENT:		X-01-06
-**  REV:		01.06.00
+**  IDENT:		X-01-07
+**  REV:		01.07.00
 **
 **  FACILITY:		BATCH
 **
@@ -37,6 +37,9 @@
 **				SET ENTRY command. The payload names the attributes it carries by a mask, so
 **				that an attribute not mentioned is not touched: a request cannot reset a
 **				field to its default by saying nothing about it.
+**
+**	 8-OCT-2026	RRL	X-01-07	SHOW$M_ALL now adds the entries kept after a job that succeeded: the jobs
+**				that wait are shown without it (BATCHD.C X-01-32).
 **--
 */
 
@@ -48,8 +51,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHIPC"
-#define	__IDENT__	"X-01-06"
-#define	__REV__		"01.06.00"
+#define	__IDENT__	"X-01-07"
+#define	__REV__		"01.07.00"
 
 #include	"batchdef.h"
 
@@ -71,7 +74,7 @@
 /*
 **  Selection indicators for the IPC$K_SHOW function.
 */
-#define	SHOW$M_ALL		(1 << 0)			/* /ALL      - include the pending and holding states 		*/
+#define	SHOW$M_ALL		(1 << 0)			/* /ALL      - include the entries kept after a success 	*/
 #define	SHOW$M_FULL		(1 << 1)			/* /FULL     - full format, handled by the utility 		*/
 #define	SHOW$M_EVERYONE		(1 << 2)			/* /EVERYONE - jobs belonging to every user 			*/
 

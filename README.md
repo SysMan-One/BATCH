@@ -169,7 +169,7 @@ $ batch show
 
 Total entries: 2
 
-$ batch show /all          # including the jobs that are waiting
+$ batch show /all          # including the successful jobs kept by /RETAIN=ALWAYS
 $ batch show /full         # a full description of each job
 $ batch delete 17          # abort a job or delete a queue entry
 $ batch release 19         # release a job from the holding state

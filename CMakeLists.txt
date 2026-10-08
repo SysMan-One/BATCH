@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-01-27
-#  REV:			01.27.00
+#  IDENT:		X-01-29
+#  REV:			01.29.00
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -137,6 +137,9 @@
 #
 #	 7-OCT-2026	RRL	X-01-28	BATCH_K_IDENT raised to X-01-10: the HELP command looks for its topics
 #				under the facility key the library is rooted at (BATCH.C X-01-35).
+#
+#	 8-OCT-2026	RRL	X-01-29	BATCH_K_IDENT raised to X-01-11: SHOW without /ALL displays the jobs that
+#				wait, and /ALL adds the entries kept after a success (BATCHD.C X-01-32).
 #--
 #
 
@@ -151,7 +154,7 @@ project(BATCH
 #  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
 #
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X-01-10"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X-01-11"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")

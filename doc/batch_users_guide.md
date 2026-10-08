@@ -596,7 +596,8 @@ Total entries: 2
 The `Status` column shows `exit=`*n* for a job that returned a nonzero exit status, `signal=`*n*
 for a job terminated by a signal, and a hyphen otherwise.
 
-Specify `/ALL` to include jobs that are waiting:
+Jobs that are waiting (`Pending`, `Holding`) are displayed as well. Specify `/ALL` to include
+the entries of successful jobs kept by `/RETAIN=ALWAYS`:
 
 ```
 $ batch show /all
@@ -834,13 +835,13 @@ Job weekly (queue SYS$BATCH, entry 18) queued
 ```
 $ batch submit /opt/jobs/migrate.sh /HOLD
 Job migrate (queue SYS$BATCH, entry 19) queued
-$ batch show /all
+$ batch show
 ...
     19  migrate              Holding    28-JUL-2026 11:20:03 00:00:00  -
 ```
 
-    The job is queued but withheld from execution. Because it is not executing and has not
-    failed, it is displayed only when `/ALL` is specified.
+    The job is queued but withheld from execution. It is waiting, so it is displayed without
+    `/ALL`.
 
 ---
 
@@ -861,10 +862,11 @@ Displays the contents of a batch queue.
 The `SHOW` command displays queue entries. Which entries are displayed is governed by the `/ALL`
 and `/EVERYONE` qualifiers; how much is displayed for each is governed by `/FULL`.
 
-Without `/ALL`, the command displays jobs in the `Executing`, `Aborting`, and `Retained` states,
-that is, the jobs that are running and the jobs that failed. Because the entry of a successful
-job is removed from the queue, such a job is not displayed even when `/ALL` is specified. Submit
-the job with `/RETAIN=ALWAYS` if its entry is to survive successful completion.
+Without `/ALL`, the command displays jobs in the `Executing`, `Aborting`, `Pending` and
+`Holding` states and the `Retained` jobs that failed: the jobs that run, the jobs that wait to
+run and the jobs that need your attention. The entry of a successful job is removed from the
+queue. If the job was submitted with `/RETAIN=ALWAYS`, its entry stays, and it is displayed only
+when `/ALL` is specified.
 
 In the brief display, the `Elapsed` column shows the time from the start of the job to its
 termination, or to the present moment if the job is still executing.
@@ -873,7 +875,7 @@ termination, or to the present moment if the job is still executing.
 
   **/ALL**
 
-    Includes jobs in the `Pending` and `Holding` states in the display.
+    Includes the entries of successful jobs kept by `/RETAIN=ALWAYS` in the display.
 
   **/EVERYONE**
 
@@ -1882,10 +1884,10 @@ file aside or remove it. This is expected after an upgrade that altered the job 
 
 ## 7.3 A Job Does Not Start
 
-`SHOW /ALL` states why: without `/ALL` a job that is merely waiting is not displayed at all.
+`SHOW` states why: the `State` column of a waiting job says what it waits for.
 
 ```
-$ batch show /all
+$ batch show
  Entry  Job name             State      Submitted            Elapsed   Status
  -----  -------------------- ---------- -------------------- --------- ----------
      7  nightly              Pending    29-JUL-2026 10:01:05 00:00:00  -

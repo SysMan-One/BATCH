@@ -239,10 +239,11 @@ so SHOW of an entry does not depend upon /ALL as SHOW of the queue
 does. An entry that does not exist is refused rather than displayed
 as an empty queue. The number may equally be given with /ENTRY.
 
-Without /ALL the jobs displayed are those executing, aborting and
-retained -- the active and the failed. Since the entry of a
-successful job leaves the queue, such a job is not displayed even
-with /ALL; submit it with /RETAIN=ALWAYS if its entry is to survive.
+Without /ALL the jobs displayed are those executing, aborting,
+waiting (Pending and Holding) and retained after a failure -- the
+queue as it stands to be worked. The entry of a successful job
+leaves the queue; one kept by /RETAIN=ALWAYS is displayed only
+with /ALL.
 
 The Elapsed column is the time from the start of the job to its end,
 or to the present moment while it is still running.
@@ -255,7 +256,8 @@ starts does not call for /FULL.
 
 ## /ALL
 
-Adds the jobs in the Pending and Holding states to the display.
+Adds the entries kept after a successful job (/RETAIN=ALWAYS) to
+the display.
 
 ## /EVERYONE
 

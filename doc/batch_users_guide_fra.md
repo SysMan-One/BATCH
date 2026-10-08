@@ -448,7 +448,7 @@ BATCH SHOW [numéro-d-entrée] [/qualificatifs]
 
 | Qualificatif | Effet |
 |---|---|
-| `/ALL` | Ajoute les travaux Pending et Holding. |
+| `/ALL` | Ajoute les entrées des travaux réussis conservées par `/RETAIN=ALWAYS`. Sans lui sont affichés les travaux en cours, en attente (Pending, Holding) et conservés après échec. |
 | `/EVERYONE` | Les travaux de tous. Le privilégié n'en a que faire. |
 | `/FULL` | Chaque entrée en entier. |
 | `/MANAGER` | L'état du contrôleur plutôt que la file. |

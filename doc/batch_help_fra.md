@@ -240,10 +240,11 @@ SHOW d'une entrée ne dépend donc pas de /ALL comme en dépend SHOW de
 la file. Une entrée inexistante est refusée plutôt qu'affichée comme
 une file vide. Le numéro peut aussi être donné par /ENTRY.
 
-Sans /ALL sont affichés les travaux en cours, ceux qu'on interrompt
-et ceux conservés après échec. L'entrée d'un travail réussi quitte la
-file ; un tel travail n'apparaît donc pas même avec /ALL. Soumettez-le
-avec /RETAIN=ALWAYS si son entrée doit demeurer.
+Sans /ALL sont affichés les travaux en cours, ceux qu'on interrompt,
+ceux qui attendent (Pending et Holding) et ceux conservés après échec :
+la file telle qu'elle reste à traiter. L'entrée d'un travail réussi
+quitte la file ; celle que /RETAIN=ALWAYS conserve n'apparaît qu'avec
+/ALL.
 
 La colonne Elapsed est le temps écoulé du début du travail à sa fin,
 ou à l'instant présent tant qu'il s'exécute.
@@ -261,7 +262,8 @@ qu'inutile.
 
 ## /ALL
 
-Ajoute à l'affichage les travaux dans les états Pending et Holding.
+Ajoute à l'affichage les entrées conservées après un travail réussi
+(/RETAIN=ALWAYS).
 
 ## /EVERYONE
 
