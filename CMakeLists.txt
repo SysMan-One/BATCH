@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-01-30
-#  REV:			01.30.00
+#  IDENT:		X-01-31
+#  REV:			01.31.00
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -143,6 +143,10 @@
 #
 #	18-OCT-2026	RRL	X-01-30	CONTRIB is gone from the kit: the STARLET proposal it carried,
 #				__UTIL$PUTMSG_FAO, was taken up by the library and is used by BATCH.
+#
+#	18-OCT-2026	RRL	X-01-31	BATCH_K_IDENT raised to X-01-12: every message text is an FAO control
+#				string (BATCHMSG.C X-01-13ECO01), and the test checks that it stays so
+#				(SMOKE.SH X-01-26).
 #--
 #
 
@@ -157,7 +161,7 @@ project(BATCH
 #  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
 #
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X-01-11"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X-01-12"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")

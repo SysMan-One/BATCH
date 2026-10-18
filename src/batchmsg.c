@@ -82,8 +82,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-01-13"
-#define	__REV__		"01.13.00"
+#define	__IDENT__	"X-01-13ECO01"
+#define	__REV__		"01.13.01"
 
 /*
 **  A single row of the message table. The text is held in an ASCIC container, so its length is

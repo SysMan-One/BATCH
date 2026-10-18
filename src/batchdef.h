@@ -77,8 +77,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHDEF"
-#define	__IDENT__	"X-01-11"
-#define	__REV__		"01.11.00"
+#define	__IDENT__	"X-01-12"
+#define	__REV__		"01.12.00"
 
 #include	<sys/types.h>
 #include	<stdarg.h>
