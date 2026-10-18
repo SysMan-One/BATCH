@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-01-29
-#  REV:			01.29.00
+#  IDENT:		X-01-30
+#  REV:			01.30.00
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -140,6 +140,9 @@
 #
 #	 8-OCT-2026	RRL	X-01-29	BATCH_K_IDENT raised to X-01-11: SHOW without /ALL displays the jobs that
 #				wait, and /ALL adds the entries kept after a success (BATCHD.C X-01-32).
+#
+#	18-OCT-2026	RRL	X-01-30	CONTRIB is gone from the kit: the STARLET proposal it carried,
+#				__UTIL$PUTMSG_FAO, was taken up by the library and is used by BATCH.
 #--
 #
 
@@ -432,7 +435,7 @@ set(BATCH_K_KIT "${BATCH_K_FACILITY}-${BATCH_K_IDENT}")
 #  What goes into it is named rather than swept up: the build tree lives inside the source tree more
 #  often than not, and a kit assembled by copying everything would copy itself.
 #
-set(BATCH_K_KITDIRS	cmake contrib doc etc src test)
+set(BATCH_K_KITDIRS	cmake doc etc src test)
 set(BATCH_K_KITFILES	CMakeLists.txt README.md .gitattributes .gitignore)
 
 set(BATCH_K_KITCOPY)

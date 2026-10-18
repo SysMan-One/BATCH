@@ -17,8 +17,6 @@ CMakeLists.txt	text
 .gitignore	text
 .gitattributes	text
 
-contrib/starlet_putmsg/*.patch	-text
-
 #
 #  The rendered manuals are carried with the sources. They are binary and are never converted.
 #
