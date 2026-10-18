@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHDEF.H
-**  IDENT:		X-01-11
-**  REV:		01.11.00
+**  IDENT:		X-01-12
+**  REV:		01.12.00
 **
 **  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 **			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -63,6 +63,9 @@
 **
 **	 1-AUG-2026	RRL	X-01-11	Field jb_logcwd added: the log of a job belongs by default in the directory
 **				it was submitted from, as it does in OpenVMS, and the spool is the fallback.
+**
+**	18-OCT-2026	RRL	X-01-12	The note on diagnostics names $PUTMSG_FAO, through which every one of them
+**				is issued, and an FAO control string as the text of a message.
 **--
 */
 
@@ -185,13 +188,13 @@ typedef struct batch_job_t {
 } BATCH$JOB;
 
 /*
-**  Diagnostics are issued through $PUTMSG of UTILITY$ROUTINES. Its argument is a condition value;
-**  the text and the message body %BATCH-<severity>-<mnemonic> are taken from the table of module
-**  BATCHMSG.C, while the library prefixes the output with the time and the position in the source.
-**  The routine returns the condition value it was given, so issuing a diagnostic and returning a
-**  specific condition still fit into a single expression:
+**  Diagnostics are issued through $PUTMSG_FAO of UTILITY$ROUTINES. Its argument is a condition value;
+**  the text, an FAO control string, is taken from the table of module BATCHMSG.C, while the library
+**  frames it with the body %BATCH-<severity>-<mnemonic> and prefixes the time and the position in the
+**  source. The routine returns the condition value it was given, so issuing a diagnostic and returning
+**  a specific condition still fit into a single expression:
 **
-**	return	$PUTMSG(BATCH$_NOSUCHENT, a_entry);
+**	return	$PUTMSG_FAO(BATCH$_NOSUCHENT, a_entry);
 */
 
 /*

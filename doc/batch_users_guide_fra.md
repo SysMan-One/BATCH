@@ -633,7 +633,7 @@ donnée en français.
 > Le fichier n'est plus celui qui a été soumis. Le script est épinglé à la soumission par
 > périphérique, inœud, taille et date ; un fichier remplacé depuis n'est pas exécuté.
 
-**BATCH-E-JOBFAIL**, job *n* (*nom*) terminated with status *s*
+**BATCH-E-JOBFAIL**, job *n* (*nom*) terminated with status *s*, log *fichier*
 
 > Le travail a fini sur un code non nul. Un code au-dessus de 128 est rapporté avec le signal qu'il
 > suppose : l'interpréteur rend 128 plus le numéro du signal quand la commande qu'il exécutait a été
@@ -684,7 +684,7 @@ donnée en français.
 > Trace d'un travail soumis pour s'exécuter sous un autre nom. Tout usage et tout refus sont
 > consignés.
 
-**BATCH-E-JRNVERSION**, journal *fichier* is incompatible
+**BATCH-E-JRNVERSION**, journal *fichier* is incompatible: magic=*m* format=*n*
 
 > Le journal est d'un format que cette révision ne lit pas — écrit avant que les enregistrements ne
 > se décrivent eux-mêmes. La file repart vide.

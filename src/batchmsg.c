@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.C
-**  IDENT:		X-01-13
-**  REV:		01.13.00
+**  IDENT:		X-01-13ECO01
+**  REV:		01.13.01
 **
 **  FACILITY:		BATCH
 **
@@ -10,10 +10,10 @@
 **			MSG$INIT and is thereafter consulted by the library itself: $PUTMSG locates the
 **			record for a condition value and formats the message from the text held here.
 **
-**			A message text is a printf(3) format string. It opens with the message body in
-**			the OpenVMS convention, %BATCH-<severity>-<mnemonic>, since the library prefixes
-**			the output with the time and the position in the source but not with the body.
-**			The leading percent sign is therefore doubled.
+**			A message text is an FAO control string - !AZ, !SL, !UL, !SQ - since $PUTMSG_FAO
+**			renders it with the FAO engine. It carries neither the envelope %BATCH-s-IDENT nor
+**			the time: the library supplies both. A printf(3) conversion is not recognized and
+**			is printed as it stands.
 **
 **			Where one condition serves several places that need to say different things, the
 **			distinguishing part is a parameter of the text rather than a condition of its
@@ -66,6 +66,10 @@
 **
 **	 8-OCT-2026	RRL	X-01-13	Text of BATCH$_NOJOBS follows the selection of SHOW without /ALL, which
 **				takes in the jobs that wait (BATCHD.C X-01-32).
+**
+**	18-OCT-2026	RRL	X-01-13ECO01	Text of BATCH$_IVENTRY carried a printf conversion that X-01-10 had
+**				missed, and the FAO engine printed it as it stood: "%s" does not name a queue
+**				entry. It is !AZ now.
 **--
 */
 
@@ -158,7 +162,7 @@ static	EMSG_RECORD	s_msgtab [] =
 	$MSGREC(BATCH$_NOPARAM,		"NOPARAM, no script specification was given"					),
 	$MSGREC(BATCH$_EXTRAPARM,	"EXTRAPARM, extraneous command parameter: !AZ"					),
 	$MSGREC(BATCH$_NOSUCHTOPIC,	"NOSUCHTOPIC, no help on !AZ"							),
-	$MSGREC(BATCH$_IVENTRY,		"IVENTRY, \"%s\" does not name a queue entry"					),
+	$MSGREC(BATCH$_IVENTRY,		"IVENTRY, \"!AZ\" does not name a queue entry"					),
 	$MSGREC(BATCH$_PURGED,		"PURGED, !UL entr!AZ removed from the queue"					),
 	$MSGREC(BATCH$_NOTCONF,		"NOTCONF, not confirmed, nothing was done"					),
 	$MSGREC(BATCH$_NOTMODIFIABLE,	"NOTMODIFIABLE, entry !UL is !AZ, the attribute cannot be altered now"		),

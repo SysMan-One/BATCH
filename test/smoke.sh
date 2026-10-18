@@ -1,8 +1,8 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-01-25
-#  REV:			01.25.00
+#  IDENT:		X-01-26
+#  REV:			01.26.00
 #
 #  FACILITY:		BATCH
 #
@@ -94,6 +94,12 @@
 #	 8-OCT-2026	RRL	X-01-25	SHOW without /ALL displays the jobs that wait: check 3 now expects the held
 #					job in the ordinary display, and check 2 is joined by one of a successful
 #					job kept by /RETAIN=ALWAYS, which only /ALL displays.
+#
+#	18-OCT-2026	RRL	X-01-26	The check of DELETE looks for the refused element in the text of IVENTRY:
+#					the text carried a printf conversion the FAO engine printed as it stood,
+#					and the mnemonic alone did not show it. A static check is added that every
+#					message text and the message reference of the manuals are written for the
+#					FAO engine and that every diagnostic goes through $PUTMSG_FAO.
 #--
 #
 
@@ -1006,7 +1012,7 @@ l_gone=0
 l_sts2=$?
 
 [ "${l_sts1}" = "0" ] && [ "${l_gone}" = "3" ] \
-	&& [ "${l_sts2}" != "0" ] && grep -q "IVENTRY" "${g_root}/lst2.txt"
+	&& [ "${l_sts2}" != "0" ] && grep -q 'IVENTRY, "notanumber" does not name' "${g_root}/lst2.txt"
 l_check $? "DELETE takes a list of entries and refuses an element that is not one"
 
 #
@@ -1282,6 +1288,34 @@ done
 
 [ "${g_fail}" = "0" ]
 l_check $? "the three User's Guides speak of the same commands and conditions"
+
+#
+#  Diagnostics are rendered by the FAO engine, which does not know a printf conversion and prints it
+#  as it stands. Nothing compiles the texts against their calls, so a conversion left behind shows
+#  only when the message is issued, as IVENTRY once printed "%s". The table, the message reference
+#  of the English and Russian manuals (the French one names the values in words) and the call sites
+#  are looked at; a !%S, !%D or !%T of the FAO engine is not a printf conversion.
+#
+g_pct='(^|[^!%])%[-+ #0-9.]*(ll|l|z|h)?[sdiuxXc]'
+
+grep -nE "^[[:space:]]*\\\$MSGREC\(.*${g_pct}" "${g_srcdir}/src/batchmsg.c" > "${g_root}/fao.txt"
+
+for l_lang in "" _rus ; do
+	sed -n '/^## 6\.3 /,/^## [0-9]/p' "${g_srcdir}/doc/batch_users_guide${l_lang}.md" \
+		| grep -nE "^    [^*].*${g_pct}" | sed "s|^|batch_users_guide${l_lang}.md:|" >> "${g_root}/fao.txt"
+done
+
+grep -nE '[$](PUTMSG|PUTMSGD|LOG|LOGD)[[:space:]]*\(|__util[$](putmsg|putmsgd|log|logd)[[:space:]]*\(' \
+	"${g_srcdir}"/src/*.c "${g_srcdir}"/src/*.h | grep -vE ':[0-9]+:[*][*]' >> "${g_root}/fao.txt"
+
+if [ -s "${g_root}/fao.txt" ] ; then
+	echo "%BATCH-E-SMOKE, a message is not written for the FAO engine:"
+	head -10 "${g_root}/fao.txt"
+	g_fail=1
+fi
+
+[ "${g_fail}" = "0" ]
+l_check $? "every message text is an FAO control string and is issued by \$PUTMSG_FAO"
 
 if [ "${g_fail}" = "0" ] ; then
 	echo "%BATCH-S-SMOKE, every check passed"

@@ -255,14 +255,16 @@ condition ne déplace pas les numéros déjà attribués :
 ```
 
 `batchmsg.c` porte la table elle-même, un tableau d'`EMSG_RECORD`, et `msg$init` qui la remet à
-`__util$inimsg`. Les deux images appellent `msg$init` avant d'émettre quoi que ce soit. Deux
+`__util$inimsg`. Les deux images appellent `msg$init` avant d'émettre quoi que ce soit. Trois
 contraintes pèsent sur la table :
 
 * elle n'est **pas** `const` — la bibliothèque la trie sur place ;
-* un texte de message est une chaîne de format **printf**, `__util$putmsgd` le mettant en forme par
-  `vsnprintf`. Le signe pour cent du corps doit donc être doublé : `"%%BATCH-E-NOSUCHENT, ..."`. Un
-  doublement omis consomme silencieusement un paramètre et décale les suivants, ce que le compilateur
-  ne relève pas.
+* un texte de message est écrit pour le moteur **FAO** — `!AZ`, `!SL`, `!UL`, `!SQ` —,
+  `__util$putmsg_fao` le mettant en forme par `__util$faol`. Le moteur ne connaît pas les conversions
+  de printf et les imprime telles quelles. Le nombre de directives du texte doit égaler le nombre
+  d'arguments de chaque point d'appel, ce que le compilateur ne relève pas ;
+* l'enveloppe `%FAC-S-IDENT` n'est **pas** dans le texte : la bibliothèque la tire du champ `facname`
+  du descripteur, et un texte qui porterait la sienne serait encadré deux fois.
 
 **Deux conditions ne peuvent partager un numéro.** Un message se retrouve par lui : une collision
 remet donc les arguments d'un message au texte d'un autre, et un texte qui attend une chaîne là où
@@ -376,7 +378,7 @@ Ce que le sous-système en emploie :
 
 | De | Quoi |
 |---|---|
-| `utility_routines.h/.c` | `$PUTMSG` et le registre des messages, `__util$deflog`, `__util$setlogfd`, `__util$rewindlogfile`, les primitives `__QUEUE` |
+| `utility_routines.h/.c` | `$PUTMSG_FAO` et le registre des messages, `__util$deflog`, `__util$setlogfd`, `__util$rewindlogfile`, les primitives `__QUEUE` |
 | `starlet.h/.c` | Le moteur FAO, `__util$asctim`, `__util$bintim`, `__util$gettim`, `__util$add_times` |
 | `cli_routines.h/.c` | `__cli$parse`, `__cli$get_value`, `__cli$present` et les tables de qualificatifs |
 | `avproto.h/.c` | Les routines TLV dont se sert le journal de la file |
@@ -555,13 +557,13 @@ modifications porte `RRL` entre la date et l'identification.
 
 ```c
 if ( $IS_FAILURE(s_batchd$job_by_entry(a_entry, &l_ent)) )
-	return	$PUTMSG(BATCH$_NOSUCHENT, a_entry);
+	return	$PUTMSG_FAO(BATCH$_NOSUCHENT, a_entry);
 ```
 
 Les exceptions sont au nombre de trois, et chacune le dit dans son propre commentaire :
 `s_batchd$sighandler`, dont la signature est imposée par le système, et les deux routines `main`.
 
-`$PUTMSG` rend la condition qu'on lui a donnée, ce qui permet de loger un diagnostic et un retour
+`$PUTMSG_FAO` rend la condition qu'on lui a donnée, ce qui permet de loger un diagnostic et un retour
 dans une seule expression.
 
 La réussite s'éprouve par `$IS_SUCCESS` ; une cause précise se distingue par `$MATCH_COND`, qui
@@ -569,7 +571,7 @@ compare l'identification et néglige la sévérité.
 
 ## 5.4 Les diagnostics
 
-Tout diagnostic passe par `$PUTMSG`. Le texte est dans la table, non au point d'appel ; là où une
+Tout diagnostic passe par `$PUTMSG_FAO`. Le texte est dans la table, non au point d'appel ; là où une
 condition sert plusieurs endroits, la partie distinctive est un paramètre du texte plutôt qu'une
 condition à part.
 
@@ -578,7 +580,7 @@ routine, son résultat et `errno` :
 
 ```c
 if ( 0 > (l_rc = mkdir(l_work, a_mode)) && (errno != EEXIST) )
-	return	$PUTMSG(BATCH$_MKDIRERR, l_work, l_rc, errno, strerror(errno));
+	return	$PUTMSG_FAO(BATCH$_MKDIRERR, l_work, l_rc, errno, strerror(errno));
 ```
 
 Rendre une condition vers le haut en laissant derrière soi le compte rendu de la bibliothèque
@@ -641,9 +643,11 @@ la plus courte abréviation non ambiguë des deux, et cela se voit de l'utilisat
 1. `batchmsg.h` — prenez le prochain numéro libre **dans le bon domaine**, et donnez-lui la sévérité
    qui décrit l'issue, non l'humeur de l'appelant. Deux conditions ne peuvent partager un numéro ;
    une vérification du test s'en assure.
-2. `batchmsg.c` — ajoutez la ligne à `s_msgtab`. Doublez le signe pour cent du corps. Le nombre de
-   conversions du texte doit égaler le nombre d'arguments que passe chaque point d'appel ; le
-   compilateur ne le vérifie pas, le format venant de la table à l'exécution.
+2. `batchmsg.c` — ajoutez la ligne à `s_msgtab`, en directives FAO et sans enveloppe propre. Le
+   nombre de directives du texte doit égaler le nombre d'arguments que passe chaque point d'appel ;
+   le compilateur ne le vérifie pas, le format venant de la table à l'exécution. `test/smoke.sh`
+   vérifie qu'aucun texte ne porte de conversion printf et que tout diagnostic passe par
+   `$PUTMSG_FAO`.
 3. Le *Guide de l'utilisateur*, chapitre 6 — la mnémonique, l'explication et la conduite à tenir.
 
 ## 6.3 Ajouter une commande

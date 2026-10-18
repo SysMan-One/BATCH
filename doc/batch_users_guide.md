@@ -1294,7 +1294,9 @@ example, is printed by `batch` although the condition was detected by `batchd`.
 ## 6.3 Message Reference
 
 Every message the subsystem issues is listed below, in the order the message numbers run. The text
-is that of the message record; a per cent sign in it marks where a value is inserted.
+is that of the message record; a directive that opens with an exclamation mark - `!AZ` for a
+string, `!UL` or `!SL` for a number, `!8XL` for a hexadecimal value - marks where a value is inserted. An `!AZ` joined to a word, as in
+`entr!AZ` or `second!AZ`, supplies its ending, and one after a number adds a remark to it.
 
 ### General
 
@@ -1306,13 +1308,13 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **INFO**, informational
 
-    the controller runs on processors %s, and a job inherits that
+    the controller runs on processors !AZ, and a job inherits that
 
     *User action:* None. This is stated once when the controller starts.
 
 **BUGCHECK**, severe
 
-    internal inconsistency: %s
+    internal inconsistency: !AZ
 
     *User action:* A defect of the subsystem. Report it with the accompanying text and the log of the controller.
 
@@ -1321,31 +1323,31 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **BUFOVF**, error
 
-    result of %d bytes does not fit in %zu
+    result of !SL bytes does not fit in !UL
 
     *User action:* Shorten the path or the value that did not fit. Where the paths are of the subsystem itself, report it.
 
 **INVTIME**, error
 
-    unparsable time specification /AFTER=%s
+    unparsable time specification /AFTER=!AZ
 
     *User action:* Correct the time specification. Appendix B states the forms accepted.
 
 **MKDIRERR**, error
 
-    cannot create %s, mkdir()->%d, errno: %d (%s)
+    cannot create !AZ, mkdir()->!SL, errno: !SL (!AZ)
 
     *User action:* Verify that the parent directory exists and that the controller may write in it.
 
 **IOERR**, error
 
-    error transferring data, %s()->%d, errno: %d (%s)
+    error transferring data, !AZ()->!SL, errno: !SL (!AZ)
 
     *User action:* The connection to the other side failed. Retry; if it persists, examine the log of the controller.
 
 **ENDOFDATA**, error
 
-    data ended earlier than expected, %s()->%d after %zu of %zu bytes
+    data ended earlier than expected, !AZ()->!SL after !UL of !UL bytes
 
     *User action:* The other side closed early. Retry. A client stopped with a signal produces this and is harmless.
 
@@ -1357,7 +1359,7 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **CWDERR**, error
 
-    getcwd()->NULL, errno: %d (%s)
+    getcwd()->NULL, errno: !SL (!AZ)
 
     *User action:* The current directory has been removed or is unreadable. Change to a directory that exists.
 
@@ -1372,49 +1374,49 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **JOBQUED**, success
 
-    job %u (%s) queued on %s, state %s
+    job !UL (!AZ) queued on !AZ, state !AZ
 
     *User action:* None. Note the entry number for DELETE and RELEASE.
 
 **JOBSTART**, success
 
-    job %u (%s) started, pid=%d, log %s
+    job !UL (!AZ) started, pid=!SL, log !AZ
 
     *User action:* None.
 
 **JOBDONE**, success
 
-    job %u (%s) completed successfully in %lld s
+    job !UL (!AZ) completed successfully in !SQ s
 
     *User action:* None. The entry has left the queue.
 
 **JOBFAIL**, error
 
-    job %u (%s) terminated with status %d, log %s
+    job !UL (!AZ) terminated with status !SL!AZ, log !AZ
 
     *User action:* Examine the log file named in the message.
 
 **JOBABORT**, error
 
-    job %u (%s) terminated by signal %d, log %s
+    job !UL (!AZ) terminated by signal !SL, log !AZ
 
     *User action:* The job was signalled. If it was not deleted deliberately, examine the log and the system journal.
 
 **JOBORPHAN**, warning
 
-    job %u was orphaned by a restart of the job controller
+    job !UL was orphaned by a restart of the job controller
 
     *User action:* The job was running when the controller stopped and its outcome is unknown. Submit it again, with /RESTART if it should survive the next stop.
 
 **NOSLOT**, error
 
-    the job table is full, capacity %d entries, while %s
+    the job table is full, capacity !SL entries, while !AZ
 
     *User action:* The queue is at its ceiling. Delete entries that are no longer wanted, or raise BATCH_K_MAXJOB and rebuild.
 
 **NOSUCHQUE**, error
 
-    there is no queue named %s
+    there is no queue named !AZ
 
     *User action:* The queue is not one the controller was told of. SHOW /QUEUES lists them; the /QUEUE qualifier of the controller sets them. A job placed in a queue nobody minds would wait for ever.
 
@@ -1426,79 +1428,79 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **PURGED**, success
 
-    %u entries removed from the queue
+    !UL entr!AZ removed from the queue
 
     *User action:* None. PURGE removed the entries of jobs that had finished.
 
 **QUEORPHAN**, warning
 
-    queue %s was not configured; restored paused for its entries
+    queue !AZ was not configured; restored paused for its entries
 
     *User action:* The journal held entries of a queue the controller was not told of. The queue was restored, and restored paused, so the entries stand still for a reason that can be read. Name it in /QUEUE, or resume it with BATCH QUEUE name /RESUME.
 
 **QUEPAUSED**, success
 
-    queue %s is paused
+    queue !AZ is paused
 
     *User action:* None. The queue starts nothing until it is resumed.
 
 **SCRIPTCHG**, error
 
-    entry %u: script %s was replaced since it was submitted
+    entry !UL: script !AZ was replaced since it was submitted
 
     *User action:* The script is not the file that was submitted. It is pinned at submission by device, inode, size and time of change; a file replaced since is not executed. Submit the job again.
 
 **SYNCFAIL**, error
 
-    job %u ended with %s
+    job !UL ended with !AZ
 
     *User action:* The job SYNC was waiting for did not succeed. Its log holds what the script said.
 
 **SYNCTMO**, error
 
-    job %u has not ended within %u seconds
+    job !UL has not ended within !UL second!AZ
 
     *User action:* The wait set by /TIMEOUT ran out. The job is still in the queue; SHOW will say what state it is in.
 
 **NOSUCHENT**, error
 
-    no queue entry %u
+    no queue entry !UL
 
     *User action:* Verify the entry number with SHOW /ALL. An entry of a job that completed has left the queue.
 
 **NOPRIV**, error
 
-    entry %u belongs to uid=%d, access denied
+    entry !UL belongs to uid=!SL, access denied
 
     *User action:* The entry belongs to another user. Only its owner, or the privileged user, may act upon it.
 
 **NOTHELD**, error
 
-    entry %u is not in the holding state
+    entry !UL is not in the holding state
 
     *User action:* RELEASE applies to a job in the Holding state. SHOW /ALL states the state of each entry.
 
 **ENTDELETED**, success
 
-    entry %u deleted from the queue
+    entry !UL deleted from the queue
 
     *User action:* None.
 
 **ENTRELEASED**, success
 
-    entry %u released from the holding state
+    entry !UL released from the holding state
 
     *User action:* None.
 
 **ENTMODIFIED**, success
 
-    entry %u modified: %s
+    entry !UL modified: !AZ
 
     *User action:* None. The list names the attributes that were altered; check it against what was typed.
 
 **NOTMODIFIABLE**, error
 
-    entry %u is %s, the attribute cannot be altered now
+    entry !UL is !AZ, the attribute cannot be altered now
 
     *User action:* The state of the job forbids the change: an executing job admits /RETAIN, /KEEP and /RESTART only, a retained one nothing. Delete the entry and submit the job anew if the change is needed.
 
@@ -1510,13 +1512,13 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **ABORTREQ**, success
 
-    SIGTERM sent to job %u (pid=%d)
+    SIGTERM sent to job !UL (pid=!SL)
 
     *User action:* None. The entry is disposed of when the job terminates.
 
 **JOBREQUEUED**, success
 
-    job %u (%s) requeued for restart, attempt %u
+    job !UL (!AZ) requeued for restart, attempt !UL
 
     *User action:* None. The job is being run again; BATCH_RESTART tells the job so.
 
@@ -1525,61 +1527,61 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **OPENIN**, error
 
-    error opening %s for input, open()->%d, errno: %d (%s)
+    error opening !AZ for input, open()->!SL, errno: !SL (!AZ)
 
     *User action:* Verify that the file exists and that the controller may read it.
 
 **OPENOUT**, error
 
-    error opening %s for output, open()->%d, errno: %d (%s)
+    error opening !AZ for output, open()->!SL, errno: !SL (!AZ)
 
     *User action:* Verify that the directory exists, that there is room on the file system, and that the controller may write there.
 
 **WRITEERR**, error
 
-    error writing %s, errno: %d (%s)
+    error writing !AZ, errno: !SL (!AZ)
 
     *User action:* The file system is probably full. Make room and retry.
 
 **RENAMEERR**, error
 
-    cannot rename %s to %s, rename()->%d, errno: %d (%s)
+    cannot rename !AZ to !AZ, rename()->!SL, errno: !SL (!AZ)
 
     *User action:* The journal could not be put in place. Verify the room and the permissions on the subsystem root.
 
 **NOJOURNAL**, informational
 
-    journal %s does not exist, the queue is empty
+    journal !AZ does not exist, the queue is empty
 
     *User action:* None. The controller is starting with an empty queue, which is expected on a first start.
 
 **JRNCORRUPT**, error
 
-    journal %s is corrupt: the header is missing
+    journal !AZ is corrupt: the header is missing
 
     *User action:* The journal is unusable and the queue starts empty. Move the file aside and report it.
 
 **JRNVERSION**, error
 
-    journal %s is incompatible: magic=%08x recsz=%u
+    journal !AZ is incompatible: magic=!8XL format=!UL
 
     *User action:* The journal was written by a different revision of the software. Remove it; the queue starts empty.
 
 **JRNTRUNC**, warning
 
-    journal %s ends at record %u of %u
+    journal !AZ ends at record !UL of !UL
 
     *User action:* The journal was cut short, probably by a full file system. The entries read are kept; the rest are lost.
 
 **JRNLOADED**, informational
 
-    records loaded from the journal: %u
+    records loaded from the journal: !UL
 
     *User action:* None.
 
 **NOSCRIPT**, error
 
-    script %s: %s, %s()->%d, errno: %d (%s)
+    script !AZ: !AZ, !AZ()->!SL, errno: !SL (!AZ)
 
     *User action:* Verify the path, that the file exists, that it is a regular file, and that both you and the controller may read it.
 
@@ -1591,13 +1593,13 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **NODIR**, error
 
-    directory %s is not accessible, realpath()->NULL, errno: %d (%s)
+    directory !AZ is not accessible, realpath()->NULL, errno: !SL (!AZ)
 
     *User action:* Verify the directory named in /LOG_FILE.
 
 **LOGSWEPT**, informational
 
-    %d job log%s removed from %s, older than %d day%s
+    !SL job log!AZ removed from !AZ, older than !SL day!AZ
 
     *User action:* None. Set /LOG_RETAIN to alter the period, or to zero to stop the sweep.
 
@@ -1606,85 +1608,85 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **NOCONNECT**, error
 
-    job controller is not available, connect(%s)->%d, errno: %d (%s)
+    job controller is not available, connect(!AZ)->!SL, errno: !SL (!AZ)
 
     *User action:* The controller is not running, or the root directory differs. Start the service and verify BATCH_ROOT.
 
 **SOCKERR**, severe
 
-    socket(AF_UNIX)->%d, errno: %d (%s)
+    socket(AF_UNIX)->!SL, errno: !SL (!AZ)
 
     *User action:* The system refused a socket. Examine the limit on open files.
 
 **BINDERR**, severe
 
-    bind(%s)->%d, errno: %d (%s)
+    bind(!AZ)->!SL, errno: !SL (!AZ)
 
     *User action:* A stale socket file or a permission. Verify the subsystem root.
 
 **LISTENERR**, severe
 
-    listen(%s)->%d, errno: %d (%s)
+    listen(!AZ)->!SL, errno: !SL (!AZ)
 
     *User action:* Report it with the accompanying text.
 
 **ACCEPTERR**, error
 
-    accept()->%d, errno: %d (%s)
+    accept()->!SL, errno: !SL (!AZ)
 
     *User action:* Usually transient. If it persists, examine the limit on open files.
 
 **PEERCRED**, error
 
-    getsockopt(SO_PEERCRED)->%d, errno: %d (%s)
+    getsockopt(SO_PEERCRED)->!SL, errno: !SL (!AZ)
 
     *User action:* The identity of the client could not be established and the request is refused. Report it.
 
 **BADMAGIC**, error
 
-    invalid frame signature: %08x
+    invalid frame signature: !8XL
 
     *User action:* Something other than the utility connected to the socket, or the two are of different revisions.
 
 **BADLENGTH**, error
 
-    invalid %s payload length: %u
+    invalid !AZ payload length: !UL
 
     *User action:* The utility and the controller are of different revisions. Install them from one build.
 
 **BADFUNC**, error
 
-    unknown function code %u
+    unknown function code !UL
 
     *User action:* The utility and the controller are of different revisions.
 
 **NOREPLY**, error
 
-    no reply to the %s request
+    no reply to the !AZ request
 
     *User action:* The controller stopped while the request was in flight. Retry.
 
 **SENDERR**, error
 
-    error transmitting %s
+    error transmitting !AZ
 
     *User action:* The connection failed. Retry.
 
 **RECVERR**, error
 
-    error receiving %s
+    error receiving !AZ
 
     *User action:* The connection failed. Retry.
 
 **SOCKPATH**, severe
 
-    socket specification %s exceeds %zu bytes
+    socket specification !AZ exceeds !UL bytes
 
     *User action:* The root directory is too long for a socket path. Choose a shorter one.
 
 **CONNCLOSED**, warning
 
-    client uid=%d closed the connection before sending a header
+    client uid=!SL closed the connection before sending a header
 
     *User action:* None. A client that was stopped produces this.
 
@@ -1693,31 +1695,31 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **IVQUAL**, error
 
-    unrecognized or ambiguous qualifier %s
+    unrecognized or ambiguous qualifier !AZ
 
     *User action:* Correct the qualifier. Chapter 5 lists those each command accepts.
 
 **MISSVAL**, error
 
-    qualifier /%s requires a value
+    qualifier /!AZ requires a value
 
     *User action:* Supply the value: the qualifier takes one, attached by an equals sign.
 
 **IVQVAL**, error
 
-    invalid value /RETAIN=%s
+    invalid value /RETAIN=!AZ
 
     *User action:* Correct the value. The command entry states what the qualifier accepts.
 
 **IVPRIO**, error
 
-    the value of /PRIORITY is outside 1..%d
+    the value of /PRIORITY is outside 1..!SL
 
     *User action:* Give a priority between 1 and 255.
 
 **MAXPARM**, warning
 
-    more than %d parameters, the excess were discarded
+    more than !SL parameters, the excess were discarded
 
     *User action:* The job was queued with the first eight parameters. Pass fewer, or pass them in a file.
 
@@ -1729,13 +1731,13 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **EXTRAPARM**, error
 
-    extraneous command parameter: %s
+    extraneous command parameter: !AZ
 
     *User action:* A command takes one parameter at most. A mistyped qualifier is taken for a parameter, so check the spelling.
 
 **IVCPU**, error
 
-    unparsable processor list /CPU=%s
+    unparsable processor list /CPU=!AZ
 
     *User action:* Correct the processor list. The form is that of taskset(1): 0-3,5,8-11.
 
@@ -1753,7 +1755,7 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **SUBREJECT**, error
 
-    the job controller rejected the request, condition %08X
+    the controller rejected the request: !AZ (!8XL)
 
     *User action:* The controller refused the request; its log states why in full.
 
@@ -1762,43 +1764,43 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **FORKERR**, error
 
-    job %u, fork()->%d, errno: %d (%s)
+    job !UL, fork()->!SL, errno: !SL (!AZ)
 
     *User action:* The system could not create a process. Examine the limit on processes and the memory available.
 
 **DAEMONERR**, severe
 
-    daemon()->%d, errno: %d (%s)
+    daemon()->!SL, errno: !SL (!AZ)
 
     *User action:* Report it with the accompanying text.
 
 **PIPEERR**, severe
 
-    pipe()->%d, errno: %d (%s)
+    pipe()->!SL, errno: !SL (!AZ)
 
     *User action:* Examine the limit on open files.
 
 **POLLERR**, error
 
-    poll()->%d, errno: %d (%s)
+    poll()->!SL, errno: !SL (!AZ)
 
     *User action:* Report it with the accompanying text.
 
 **AFFERR**, error
 
-    job %u: sched_setaffinity()->%d, errno: %d (%s)
+    job !UL: sched_setaffinity()->!SL, errno: !SL (!AZ)
 
     *User action:* The processors named are not available to the controller. SHOW the mask it runs under in its log.
 
 **UNKPROC**, warning
 
-    an unknown process terminated, pid=%d
+    an unknown process terminated, pid=!SL
 
     *User action:* None ordinarily. A process not belonging to any entry terminated.
 
 **CTLSTARTED**, success
 
-    job controller started, root=%s, queue=%s, job limit=%d, socket=%s
+    job controller started, root=!AZ, queue=!AZ, job limit=!SL, socket=!AZ
 
     *User action:* None.
 
@@ -1810,7 +1812,7 @@ is that of the message record; a per cent sign in it marks where a value is inse
 
 **IDENT**, success
 
-    %s %s (%s), build %s
+    !AZ !AZ (!AZ), build !AZ
 
     *User action:* None.
 

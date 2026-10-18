@@ -248,7 +248,7 @@ not displace numbers already assigned:
 ```
 
 `batchmsg.c` holds the table itself, an array of `EMSG_RECORD`, and `msg$init` which hands it to
-`__util$inimsg`. Both images call `msg$init` before issuing anything. Two constraints on the table:
+`__util$inimsg`. Both images call `msg$init` before issuing anything. Three constraints on the table:
 
 * it is **not** `const` — the library sorts it in place;
 * a message text is written for the **FAO** engine — `!AZ`, `!SL`, `!UL`, `!SQ` — because
@@ -353,7 +353,7 @@ What the subsystem uses:
 
 | From | What |
 |---|---|
-| `utility_routines.h/.c` | `$PUTMSG` and the message registry, `__util$deflog`, `__util$rewindlogfile`, the `__QUEUE` primitives |
+| `utility_routines.h/.c` | `$PUTMSG_FAO` and the message registry, `__util$deflog`, `__util$rewindlogfile`, the `__QUEUE` primitives |
 | `starlet.h/.c` | The FAO engine, `__util$asctim`, `__util$bintim`, `__util$gettim`, `__util$add_times` |
 | `cli_routines.h/.c` | `__cli$parse`, `__cli$get_value` and the qualifier tables |
 
@@ -510,13 +510,13 @@ modification history carries `RRL` between the date and the identification.
 
 ```c
 if ( $IS_FAILURE(s_batchd$job_by_entry(a_entry, &l_ent)) )
-	return	$PUTMSG(BATCH$_NOSUCHENT, a_entry);
+	return	$PUTMSG_FAO(BATCH$_NOSUCHENT, a_entry);
 ```
 
 The exceptions are three, and each says so in its own comment: `s_batchd$sighandler`, whose signature
 is imposed by the system, and the two `main` routines.
 
-`$PUTMSG` returns the condition it was given, which is what lets a diagnostic and a return fit into
+`$PUTMSG_FAO` returns the condition it was given, which is what lets a diagnostic and a return fit into
 one expression.
 
 Success is tested with `$IS_SUCCESS`; a specific cause is told apart with `$MATCH_COND`, which
@@ -524,7 +524,7 @@ compares the identification and disregards severity.
 
 ## 5.4 Diagnostics
 
-All diagnostics go through `$PUTMSG`. The text is in the table, not at the point of the call; where
+All diagnostics go through `$PUTMSG_FAO`. The text is in the table, not at the point of the call; where
 one condition serves several places, the distinguishing part is a parameter of the text rather than
 a condition of its own.
 
@@ -533,7 +533,7 @@ result and `errno`:
 
 ```c
 if ( 0 > (l_rc = mkdir(l_work, a_mode)) && (errno != EEXIST) )
-	return	$PUTMSG(BATCH$_MKDIRERR, l_work, l_rc, errno, strerror(errno));
+	return	$PUTMSG_FAO(BATCH$_MKDIRERR, l_work, l_rc, errno, strerror(errno));
 ```
 
 Returning a condition upward and leaving the run-time library's account of the failure behind loses
@@ -596,12 +596,13 @@ shortest unambiguous abbreviation of both, and that is visible to the user.
 The check worth running after a change to the table:
 
 ```sh
-# every per cent sign is either doubled or a valid conversion,
-# and the argument count of every $PUTMSG matches its text
+# every text and the message reference of the manuals carry FAO directives, not printf
+# conversions, and every diagnostic goes through $PUTMSG_FAO
 ```
 
-There is no script for this in the tree; it was done ad hoc, and a defect it would have caught did
-reach a build once. Writing it is a standing improvement.
+`test/smoke.sh` makes this check (SMOKE.SH X-01-26); it was written after the text of `IVENTRY` had
+reached a build with a `%s` the FAO engine printed as it stood. The number of arguments of a call
+against the directives of its text is still not checked by the tree: count them by hand.
 
 ## 6.3 Adding a Command
 

@@ -234,14 +234,14 @@ The project is written in the OpenVMS style:
 * every module header carries `MODULE`, `IDENT`, `REV`, `FACILITY`, `ABSTRACT`, `AUTHOR`,
   `CREATION DATE` and a modification history;
 * prefixes `g_`, `l_`, `s_` and `a_` for global, local, static and routine parameters;
-* constants and macros carry the dollar separator: `BATCH_K_MAXJOB`, `STS$K_ERROR`, `$PUTMSG`,
+* constants and macros carry the dollar separator: `BATCH_K_MAXJOB`, `STS$K_ERROR`, `$PUTMSG_FAO`,
   `$IS_SUCCESS`;
 * structure declaration: the tag carries the suffix `_t` and the type name the dollar separator,
   for instance `typedef struct batch_job_t { ... } BATCH$JOB`;
 * variable declarations at the head of a routine, without indentation, grouped by type;
 * a routine returns a condition value `BATCH$_*` and delivers computed values through output
   parameters; the exceptions — `util$log`, the signal handler and `main` — are noted in comments;
-* all diagnostics are issued through `$PUTMSG` with an explicit condition value;
+* all diagnostics are issued through `$PUTMSG_FAO` with an explicit condition value;
 * all formatting goes through the FAO engine of the `starlet` module of that package — `util$fao` and
   `util$faol` — and not through the formatted output of the run-time library. Neither image calls
   `printf` in any of its forms, and neither includes `<stdio.h>`.

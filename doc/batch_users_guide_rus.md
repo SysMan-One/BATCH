@@ -1275,7 +1275,10 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 ## 6.3 Справочник сообщений
 
 Ниже перечислены все сообщения подсистемы в порядке возрастания номеров. Текст приведён так, как он
-записан в таблице сообщений: знак процента в нём отмечает место, куда подставляется значение. Сами
+записан в таблице сообщений: директива с восклицательным знаком — `!AZ` для строки, `!UL` или `!SL`
+для числа, `!8XL` для шестнадцатеричного значения — отмечает место, куда подставляется значение.
+`!AZ`, приставленная к слову, как в `entr!AZ` или `second!AZ`, даёт его окончание, а после числа —
+добавляет к нему пояснение. Сами
 сообщения программа выдаёт по-английски, поэтому здесь они не переведены — иначе читатель не нашёл
 бы в справочнике то, что увидел на экране.
 
@@ -1289,13 +1292,13 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **INFO**, информация
 
-    the controller runs on processors %s, and a job inherits that
+    the controller runs on processors !AZ, and a job inherits that
 
     *Действие:* Не требуется. Сообщается один раз, при запуске контроллера.
 
 **BUGCHECK**, неустранимая ошибка
 
-    internal inconsistency: %s
+    internal inconsistency: !AZ
 
     *Действие:* Дефект подсистемы. Сообщите о нём, приведя текст сообщения и журнал контроллера.
 
@@ -1304,31 +1307,31 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **BUFOVF**, ошибка
 
-    result of %d bytes does not fit in %zu
+    result of !SL bytes does not fit in !UL
 
     *Действие:* Укоротите путь или значение, которое не поместилось. Если пути принадлежат самой подсистеме, сообщите о случае.
 
 **INVTIME**, ошибка
 
-    unparsable time specification /AFTER=%s
+    unparsable time specification /AFTER=!AZ
 
     *Действие:* Исправьте спецификацию времени. Допустимые формы перечислены в Приложении B.
 
 **MKDIRERR**, ошибка
 
-    cannot create %s, mkdir()->%d, errno: %d (%s)
+    cannot create !AZ, mkdir()->!SL, errno: !SL (!AZ)
 
     *Действие:* Убедитесь, что родительский каталог существует и что контроллер вправе в нём писать.
 
 **IOERR**, ошибка
 
-    error transferring data, %s()->%d, errno: %d (%s)
+    error transferring data, !AZ()->!SL, errno: !SL (!AZ)
 
     *Действие:* Обмен с другой стороной прервался. Повторите; если повторяется, посмотрите журнал контроллера.
 
 **ENDOFDATA**, ошибка
 
-    data ended earlier than expected, %s()->%d after %zu of %zu bytes
+    data ended earlier than expected, !AZ()->!SL after !UL of !UL bytes
 
     *Действие:* Другая сторона закрыла соединение раньше срока. Повторите. Снятый по сигналу клиент даёт это сообщение, и оно безвредно.
 
@@ -1340,7 +1343,7 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **CWDERR**, ошибка
 
-    getcwd()->NULL, errno: %d (%s)
+    getcwd()->NULL, errno: !SL (!AZ)
 
     *Действие:* Текущий каталог удалён или недоступен для чтения. Перейдите в существующий каталог.
 
@@ -1355,49 +1358,49 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **JOBQUED**, успех
 
-    job %u (%s) queued on %s, state %s
+    job !UL (!AZ) queued on !AZ, state !AZ
 
     *Действие:* Не требуется. Запомните номер записи — он нужен командам DELETE и RELEASE.
 
 **JOBSTART**, успех
 
-    job %u (%s) started, pid=%d, log %s
+    job !UL (!AZ) started, pid=!SL, log !AZ
 
     *Действие:* Не требуется.
 
 **JOBDONE**, успех
 
-    job %u (%s) completed successfully in %lld s
+    job !UL (!AZ) completed successfully in !SQ s
 
     *Действие:* Не требуется. Запись покинула очередь.
 
 **JOBFAIL**, ошибка
 
-    job %u (%s) terminated with status %d, log %s
+    job !UL (!AZ) terminated with status !SL!AZ, log !AZ
 
     *Действие:* Посмотрите журнал задания, названный в сообщении.
 
 **JOBABORT**, ошибка
 
-    job %u (%s) terminated by signal %d, log %s
+    job !UL (!AZ) terminated by signal !SL, log !AZ
 
     *Действие:* Заданию послан сигнал. Если это сделано не намеренно, посмотрите журнал задания и журнал системы.
 
 **JOBORPHAN**, предупреждение
 
-    job %u was orphaned by a restart of the job controller
+    job !UL was orphaned by a restart of the job controller
 
     *Действие:* Задание выполнялось, когда контроллер остановился, и его исход неизвестен. Подайте задание снова, с /RESTART, если оно должно переживать остановку.
 
 **NOSLOT**, ошибка
 
-    the job table is full, capacity %d entries, while %s
+    the job table is full, capacity !SL entries, while !AZ
 
     *Действие:* Очередь достигла потолка. Удалите ненужные записи или поднимите BATCH_K_MAXJOB и пересоберите.
 
 **NOSUCHQUE**, ошибка
 
-    there is no queue named %s
+    there is no queue named !AZ
 
     *Действие:* Очередь не из тех, о которых контроллеру сообщили. SHOW /QUEUES их перечисляет; квалификатор /QUEUE контроллера их задаёт. Задание в очереди, за которой никто не следит, ждало бы вечно.
 
@@ -1409,79 +1412,79 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **PURGED**, успех
 
-    %u entries removed from the queue
+    !UL entr!AZ removed from the queue
 
     *Действие:* Не требуется. PURGE снял записи завершившихся заданий.
 
 **QUEORPHAN**, предупреждение
 
-    queue %s was not configured; restored paused for its entries
+    queue !AZ was not configured; restored paused for its entries
 
     *Действие:* В журнале нашлись записи очереди, о которой контроллеру не сообщили. Очередь восстановлена, и восстановлена приостановленной, чтобы причина неподвижности записей читалась. Назовите её в /QUEUE либо пустите командой BATCH QUEUE имя /RESUME.
 
 **QUEPAUSED**, успех
 
-    queue %s is paused
+    queue !AZ is paused
 
     *Действие:* Не требуется. Очередь ничего не запускает, пока не будет возобновлена.
 
 **SCRIPTCHG**, ошибка
 
-    entry %u: script %s was replaced since it was submitted
+    entry !UL: script !AZ was replaced since it was submitted
 
     *Действие:* Сценарий не тот файл, что был подан. Он закрепляется при подаче по устройству, узлу, размеру и времени изменения; подменённый с тех пор не выполняется. Подайте задание заново.
 
 **SYNCFAIL**, ошибка
 
-    job %u ended with %s
+    job !UL ended with !AZ
 
     *Действие:* Задание, которого ждала команда SYNC, не удалось. Что сказал сценарий, лежит в его журнале.
 
 **SYNCTMO**, ошибка
 
-    job %u has not ended within %u seconds
+    job !UL has not ended within !UL second!AZ
 
     *Действие:* Время, заданное /TIMEOUT, вышло. Задание по-прежнему в очереди; SHOW скажет, в каком оно состоянии.
 
 **NOSUCHENT**, ошибка
 
-    no queue entry %u
+    no queue entry !UL
 
     *Действие:* Проверьте номер записи командой SHOW /ALL. Запись успешно завершённого задания очередь покидает.
 
 **NOPRIV**, ошибка
 
-    entry %u belongs to uid=%d, access denied
+    entry !UL belongs to uid=!SL, access denied
 
     *Действие:* Запись принадлежит другому пользователю. Распоряжаться ею вправе её владелец либо привилегированный пользователь.
 
 **NOTHELD**, ошибка
 
-    entry %u is not in the holding state
+    entry !UL is not in the holding state
 
     *Действие:* RELEASE применима к заданию в состоянии Holding. Состояние каждой записи показывает SHOW /ALL.
 
 **ENTDELETED**, успех
 
-    entry %u deleted from the queue
+    entry !UL deleted from the queue
 
     *Действие:* Не требуется.
 
 **ENTRELEASED**, успех
 
-    entry %u released from the holding state
+    entry !UL released from the holding state
 
     *Действие:* Не требуется.
 
 **ENTMODIFIED**, успех
 
-    entry %u modified: %s
+    entry !UL modified: !AZ
 
     *Действие:* Не требуется. Список называет изменённые атрибуты; сверьте его с набранным.
 
 **NOTMODIFIABLE**, ошибка
 
-    entry %u is %s, the attribute cannot be altered now
+    entry !UL is !AZ, the attribute cannot be altered now
 
     *Действие:* Состояние задания запрещает изменение: у исполняющегося допустимы лишь /RETAIN, /KEEP и /RESTART, у сохранённого — ничего. Если изменение необходимо, снимите запись и подайте задание заново.
 
@@ -1493,13 +1496,13 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **ABORTREQ**, успех
 
-    SIGTERM sent to job %u (pid=%d)
+    SIGTERM sent to job !UL (pid=!SL)
 
     *Действие:* Не требуется. Запись будет обработана, когда задание завершится.
 
 **JOBREQUEUED**, успех
 
-    job %u (%s) requeued for restart, attempt %u
+    job !UL (!AZ) requeued for restart, attempt !UL
 
     *Действие:* Не требуется. Задание выполняется повторно; переменная BATCH_RESTART сообщает ему об этом.
 
@@ -1508,61 +1511,61 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **OPENIN**, ошибка
 
-    error opening %s for input, open()->%d, errno: %d (%s)
+    error opening !AZ for input, open()->!SL, errno: !SL (!AZ)
 
     *Действие:* Убедитесь, что файл существует и доступен контроллеру для чтения.
 
 **OPENOUT**, ошибка
 
-    error opening %s for output, open()->%d, errno: %d (%s)
+    error opening !AZ for output, open()->!SL, errno: !SL (!AZ)
 
     *Действие:* Убедитесь, что каталог существует, на файловой системе есть место, и контроллер вправе там писать.
 
 **WRITEERR**, ошибка
 
-    error writing %s, errno: %d (%s)
+    error writing !AZ, errno: !SL (!AZ)
 
     *Действие:* Скорее всего, файловая система заполнена. Освободите место и повторите.
 
 **RENAMEERR**, ошибка
 
-    cannot rename %s to %s, rename()->%d, errno: %d (%s)
+    cannot rename !AZ to !AZ, rename()->!SL, errno: !SL (!AZ)
 
     *Действие:* Журнал очереди не удалось поставить на место. Проверьте место и права на корневом каталоге подсистемы.
 
 **NOJOURNAL**, информация
 
-    journal %s does not exist, the queue is empty
+    journal !AZ does not exist, the queue is empty
 
     *Действие:* Не требуется. Контроллер начинает с пустой очереди, что при первом запуске и ожидается.
 
 **JRNCORRUPT**, ошибка
 
-    journal %s is corrupt: the header is missing
+    journal !AZ is corrupt: the header is missing
 
     *Действие:* Журнал непригоден, очередь начинается пустой. Отложите файл в сторону и сообщите о случае.
 
 **JRNVERSION**, ошибка
 
-    journal %s is incompatible: magic=%08x recsz=%u
+    journal !AZ is incompatible: magic=!8XL format=!UL
 
     *Действие:* Журнал написан другой редакцией программы. Удалите его; очередь начнётся пустой.
 
 **JRNTRUNC**, предупреждение
 
-    journal %s ends at record %u of %u
+    journal !AZ ends at record !UL of !UL
 
     *Действие:* Журнал оборван, скорее всего заполненной файловой системой. Прочитанные записи сохранены, остальные потеряны.
 
 **JRNLOADED**, информация
 
-    records loaded from the journal: %u
+    records loaded from the journal: !UL
 
     *Действие:* Не требуется.
 
 **NOSCRIPT**, ошибка
 
-    script %s: %s, %s()->%d, errno: %d (%s)
+    script !AZ: !AZ, !AZ()->!SL, errno: !SL (!AZ)
 
     *Действие:* Проверьте путь, существование файла, что это обычный файл, и что он доступен для чтения и вам, и контроллеру.
 
@@ -1574,13 +1577,13 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **NODIR**, ошибка
 
-    directory %s is not accessible, realpath()->NULL, errno: %d (%s)
+    directory !AZ is not accessible, realpath()->NULL, errno: !SL (!AZ)
 
     *Действие:* Проверьте каталог, названный в /LOG_FILE.
 
 **LOGSWEPT**, информация
 
-    %d job log%s removed from %s, older than %d day%s
+    !SL job log!AZ removed from !AZ, older than !SL day!AZ
 
     *Действие:* Не требуется. Срок задаётся ключом /LOG_RETAIN, ноль отключает уборку.
 
@@ -1589,85 +1592,85 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **NOCONNECT**, ошибка
 
-    job controller is not available, connect(%s)->%d, errno: %d (%s)
+    job controller is not available, connect(!AZ)->!SL, errno: !SL (!AZ)
 
     *Действие:* Контроллер не запущен либо работает с другим корневым каталогом. Запустите службу и проверьте BATCH_ROOT.
 
 **SOCKERR**, неустранимая ошибка
 
-    socket(AF_UNIX)->%d, errno: %d (%s)
+    socket(AF_UNIX)->!SL, errno: !SL (!AZ)
 
     *Действие:* Система отказала в сокете. Посмотрите предел на число открытых файлов.
 
 **BINDERR**, неустранимая ошибка
 
-    bind(%s)->%d, errno: %d (%s)
+    bind(!AZ)->!SL, errno: !SL (!AZ)
 
     *Действие:* Оставшийся файл сокета либо права доступа. Проверьте корневой каталог подсистемы.
 
 **LISTENERR**, неустранимая ошибка
 
-    listen(%s)->%d, errno: %d (%s)
+    listen(!AZ)->!SL, errno: !SL (!AZ)
 
     *Действие:* Сообщите о случае, приведя текст сообщения.
 
 **ACCEPTERR**, ошибка
 
-    accept()->%d, errno: %d (%s)
+    accept()->!SL, errno: !SL (!AZ)
 
     *Действие:* Обычно случайность. Если повторяется, посмотрите предел на число открытых файлов.
 
 **PEERCRED**, ошибка
 
-    getsockopt(SO_PEERCRED)->%d, errno: %d (%s)
+    getsockopt(SO_PEERCRED)->!SL, errno: !SL (!AZ)
 
     *Действие:* Личность клиента установить не удалось, запрос отвергнут. Сообщите о случае.
 
 **BADMAGIC**, ошибка
 
-    invalid frame signature: %08x
+    invalid frame signature: !8XL
 
     *Действие:* К сокету подключилось что-то, кроме утилиты, либо утилита и контроллер разных редакций.
 
 **BADLENGTH**, ошибка
 
-    invalid %s payload length: %u
+    invalid !AZ payload length: !UL
 
     *Действие:* Утилита и контроллер разных редакций. Установите их из одной сборки.
 
 **BADFUNC**, ошибка
 
-    unknown function code %u
+    unknown function code !UL
 
     *Действие:* Утилита и контроллер разных редакций.
 
 **NOREPLY**, ошибка
 
-    no reply to the %s request
+    no reply to the !AZ request
 
     *Действие:* Контроллер остановился, пока запрос был в пути. Повторите.
 
 **SENDERR**, ошибка
 
-    error transmitting %s
+    error transmitting !AZ
 
     *Действие:* Соединение прервалось. Повторите.
 
 **RECVERR**, ошибка
 
-    error receiving %s
+    error receiving !AZ
 
     *Действие:* Соединение прервалось. Повторите.
 
 **SOCKPATH**, неустранимая ошибка
 
-    socket specification %s exceeds %zu bytes
+    socket specification !AZ exceeds !UL bytes
 
     *Действие:* Корневой каталог слишком длинен для пути сокета. Выберите короче.
 
 **CONNCLOSED**, предупреждение
 
-    client uid=%d closed the connection before sending a header
+    client uid=!SL closed the connection before sending a header
 
     *Действие:* Не требуется. Такое сообщение даёт снятый клиент.
 
@@ -1676,31 +1679,31 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **IVQUAL**, ошибка
 
-    unrecognized or ambiguous qualifier %s
+    unrecognized or ambiguous qualifier !AZ
 
     *Действие:* Исправьте квалификатор. Допустимые для каждой команды перечислены в Главе 5.
 
 **MISSVAL**, ошибка
 
-    qualifier /%s requires a value
+    qualifier /!AZ requires a value
 
     *Действие:* Укажите значение: квалификатор его требует, присоединяя знаком равенства.
 
 **IVQVAL**, ошибка
 
-    invalid value /RETAIN=%s
+    invalid value /RETAIN=!AZ
 
     *Действие:* Исправьте значение. Что принимает квалификатор, сказано в описании команды.
 
 **IVPRIO**, ошибка
 
-    the value of /PRIORITY is outside 1..%d
+    the value of /PRIORITY is outside 1..!SL
 
     *Действие:* Укажите приоритет от 1 до 255.
 
 **MAXPARM**, предупреждение
 
-    more than %d parameters, the excess were discarded
+    more than !SL parameters, the excess were discarded
 
     *Действие:* Задание поставлено с первыми восемью параметрами. Передайте меньше или передайте их файлом.
 
@@ -1712,13 +1715,13 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **EXTRAPARM**, ошибка
 
-    extraneous command parameter: %s
+    extraneous command parameter: !AZ
 
     *Действие:* Команда принимает не более одного параметра. Квалификатор с опечаткой принимается за параметр, поэтому проверьте написание.
 
 **IVCPU**, ошибка
 
-    unparsable processor list /CPU=%s
+    unparsable processor list /CPU=!AZ
 
     *Действие:* Исправьте список процессоров. Запись такая же, как у taskset(1): 0-3,5,8-11.
 
@@ -1736,7 +1739,7 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **SUBREJECT**, ошибка
 
-    the job controller rejected the request, condition %08X
+    the controller rejected the request: !AZ (!8XL)
 
     *Действие:* Контроллер отверг запрос; полная причина изложена в его журнале.
 
@@ -1745,43 +1748,43 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **FORKERR**, ошибка
 
-    job %u, fork()->%d, errno: %d (%s)
+    job !UL, fork()->!SL, errno: !SL (!AZ)
 
     *Действие:* Системе не удалось породить процесс. Посмотрите предел на число процессов и доступную память.
 
 **DAEMONERR**, неустранимая ошибка
 
-    daemon()->%d, errno: %d (%s)
+    daemon()->!SL, errno: !SL (!AZ)
 
     *Действие:* Сообщите о случае, приведя текст сообщения.
 
 **PIPEERR**, неустранимая ошибка
 
-    pipe()->%d, errno: %d (%s)
+    pipe()->!SL, errno: !SL (!AZ)
 
     *Действие:* Посмотрите предел на число открытых файлов.
 
 **POLLERR**, ошибка
 
-    poll()->%d, errno: %d (%s)
+    poll()->!SL, errno: !SL (!AZ)
 
     *Действие:* Сообщите о случае, приведя текст сообщения.
 
 **AFFERR**, ошибка
 
-    job %u: sched_setaffinity()->%d, errno: %d (%s)
+    job !UL: sched_setaffinity()->!SL, errno: !SL (!AZ)
 
     *Действие:* Названные процессоры недоступны контроллеру. Маску, под которой он работает, он сообщает в своём журнале.
 
 **UNKPROC**, предупреждение
 
-    an unknown process terminated, pid=%d
+    an unknown process terminated, pid=!SL
 
     *Действие:* Обычно не требуется. Завершился процесс, не принадлежащий ни одной записи.
 
 **CTLSTARTED**, успех
 
-    job controller started, root=%s, queue=%s, job limit=%d, socket=%s
+    job controller started, root=!AZ, queue=!AZ, job limit=!SL, socket=!AZ
 
     *Действие:* Не требуется.
 
@@ -1793,7 +1796,7 @@ BATCH ANALYZE [спецификация-журнала] [/DUMP]
 
 **IDENT**, успех
 
-    %s %s (%s), build %s
+    !AZ !AZ (!AZ), build !AZ
 
     *Действие:* Не требуется.
 
