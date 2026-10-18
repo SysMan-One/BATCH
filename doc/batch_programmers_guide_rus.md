@@ -649,6 +649,7 @@ l_check $? "the job reached the queue"
 | `src/CMakeLists.txt` | Цели сборки и установка |
 | `test/CMakeLists.txt` | Регистрация тестов |
 | `etc/batchd.service.in` | Шаблон unit-файла systemd |
+| `etc/batchd.init.in` | Шаблон сценария запуска System V, для системы без systemd |
 | `cmake/uninstall.cmake.in` | Сценарий удаления |
 | `doc/mkpdf.py` | Вёрстка руководств в PDF |
 | `src/batchvers.h.in` | Шаблон заголовка идентификации |

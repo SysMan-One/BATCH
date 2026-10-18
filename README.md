@@ -46,7 +46,7 @@ is used as it stands.
 | `src/` | sources and headers (see the table below) |
 | `test/` | the functional test `smoke.sh` and its registration with `ctest` |
 | `doc/` | the User's and Programmer's Guides |
-| `etc/` | template of the systemd unit |
+| `etc/` | templates of the systemd unit and of the System V start script |
 | `cmake/` | the removal script |
 
 | Module | Purpose |
@@ -70,13 +70,12 @@ cmake -S . -B build
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 sudo cmake --install build
-sudo systemctl enable --now batchd            # start the controller with the system
+sudo systemctl restart batchd                 # after an upgrade; without systemd: service batchd restart
 ```
 
 The installation puts `batch` in `bin`, `batchd` in `sbin`, this file and the guide in
-`share/doc/BATCH`, the systemd unit in `/lib/systemd/system` and the subsystem root in
-`/var/spool/batch`. The unit is installed but not enabled — that decision belongs to whoever
-administers the system.
+`share/doc/BATCH`, the systemd unit in `/lib/systemd/system` — or, on a system without systemd, the
+System V start script in `/etc/init.d` — and the subsystem root in `/var/spool/batch`.
 
 Removal reads the manifest written at installation time:
 
@@ -84,7 +83,9 @@ Removal reads the manifest written at installation time:
 sudo cmake --build build --target uninstall
 ```
 
-Installing enables and starts the job controller, and removing stops and disables it. A staged
+Installing enables and starts the job controller — through `systemctl`, or through `update-rc.d` and
+the start script where there is no systemd — and removing stops and disables it before any file
+goes. A controller already running is not replaced: restart it after an upgrade. A staged
 installation — one made with `DESTDIR` set — leaves both to whoever installs the package.
 `BATCH_M_AUTOSTART=OFF` turns the starting off.
 
@@ -113,6 +114,7 @@ UNIX domain sockets, the `SO_PEERCRED` socket option, `daemon(3)` and `poll(2)`.
 | `BATCH_M_STRICT` | `OFF` | treat compiler diagnostics as errors |
 | `BATCH_M_TESTS` | `ON` | build and register the functional tests |
 | `BATCH_M_SYSTEMD` | `ON` | install the systemd unit of the job controller |
+| `BATCH_M_SYSVINIT` | `ON` without systemd | install the System V start script of the job controller |
 | `BATCH_M_PDF` | `OFF` | render the manuals as PDF and install them as well |
 | `BATCH_M_STATICLIB` | `ON` | bind UTILITY$ROUTINES into the images rather than share it |
 
@@ -144,6 +146,7 @@ Installing the library also rebuilds the catalogue the HELP utility shares betwe
 to the package; `vhelp /SYSCACHE` builds it.
 
 | `BATCH_K_SYSTEMDDIR` | `/lib/systemd/system` | where that unit is installed |
+| `BATCH_K_INITDIR` | `/etc/init.d` | where the System V start script is installed |
 
 ```sh
 cmake -S . -B build -DBATCH\$K_SPOOLROOT=/opt/batch -DBATCH\$M_STRICT=ON

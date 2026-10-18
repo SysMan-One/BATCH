@@ -1,7 +1,7 @@
 #++
 #  MODULE:		uninstall.cmake.in
-#  IDENT:		X-01-03
-#  REV:			01.03.00
+#  IDENT:		X-01-04
+#  REV:			01.04.00
 #
 #  FACILITY:		BATCH
 #
@@ -27,6 +27,11 @@
 #
 #	 3-AUG-2026	RRL	X-01-03	The names carry no dollar: this file is a script of its own, parsed when
 #				the removal is run, and a dollar within a name is not a reference there.
+#
+#	18-OCT-2026	RRL	X-01-04	The service is stopped before the files go, not after: the unit and the
+#				image were already removed when it was stopped, so the stop failed and the
+#				controller went on running. A System V start script is stopped and its
+#				links removed where there is no systemctl.
 #--
 #
 
@@ -40,7 +45,48 @@ file(READ "${batch_manifest}" batch_files)
 string(REGEX REPLACE "\n" ";" batch_files "${batch_files}")
 
 #
-#  The files first. A path recorded in the manifest but already gone is reported and passed over:
+#  The service first, while its unit, its start script and the image are still there: a unit removed
+#  while the service is still enabled leaves systemd complaining of a unit it cannot find, at every
+#  boot, and a controller left running goes on until the machine is next restarted. Where there is no
+#  systemctl, the System V start script is run to stop the controller and its links are removed.
+#
+#  The names here carry no dollar either: this file is a script of its own, parsed when the removal
+#  is run, and ${NAME$K_THING} is not a variable reference to CMake.
+#
+if ( NOT "$ENV{DESTDIR}" STREQUAL "" )
+	message(STATUS "%BATCH-I-SERVICE, staged removal, the service is left to the package")
+else()
+	find_program(batch_systemctl systemctl)
+	find_program(batch_updatercd update-rc.d)
+
+	if ( batch_systemctl )
+		execute_process(COMMAND "${batch_systemctl}" disable --now batchd
+				RESULT_VARIABLE batch_stopped OUTPUT_QUIET ERROR_QUIET)
+
+		if ( batch_stopped EQUAL 0 )
+			message(STATUS "%BATCH-S-SERVICE, the job controller is stopped and disabled")
+		else()
+			message(STATUS "%BATCH-I-SERVICE, the service was not enabled, nothing to disable")
+		endif()
+	elseif ( EXISTS "@BATCH_CFG_INITDIR@/batchd" )
+		execute_process(COMMAND "@BATCH_CFG_INITDIR@/batchd" stop
+				RESULT_VARIABLE batch_stopped OUTPUT_QUIET ERROR_QUIET)
+
+		if ( batch_updatercd )
+			execute_process(COMMAND "${batch_updatercd}" -f batchd remove
+					RESULT_VARIABLE batch_removed OUTPUT_QUIET ERROR_QUIET)
+		endif()
+
+		message(STATUS "%BATCH-S-SERVICE, the job controller is stopped and its start links removed")
+	else()
+		message(STATUS "%BATCH-I-SERVICE, no systemctl and no start script, nothing to disable")
+	endif()
+endif()
+
+message(STATUS "")
+
+#
+#  Then the files. A path recorded in the manifest but already gone is reported and passed over:
 #  the state wanted is its absence, and that is the state.
 #
 foreach ( batch_file ${batch_files} )
@@ -91,32 +137,4 @@ elseif ( EXISTS "@BATCH_CFG_HELPEXE@" )
 	endif()
 endif()
 
-message(STATUS "")
-#
-#  The service is stopped and disabled before its unit file goes: a unit that has been removed while
-#  the service is still enabled leaves systemd complaining of a unit it cannot find, at every boot,
-#  and the controller itself would go on running until the machine is next restarted.
-#
-#
-#  The names here carry no dollar either: this file is a script of its own, parsed when the removal
-#  is run, and ${NAME$K_THING} is not a variable reference to CMake.
-#
-if ( NOT "$ENV{DESTDIR}" STREQUAL "" )
-	message(STATUS "%BATCH-I-SERVICE, staged removal, the service is left to the package")
-else()
-	find_program(batch_systemctl systemctl)
-
-	if ( NOT batch_systemctl )
-		message(STATUS "%BATCH-I-SERVICE, no systemctl, nothing to disable")
-	else()
-		execute_process(COMMAND "${batch_systemctl}" disable --now batchd
-				RESULT_VARIABLE batch_stopped OUTPUT_QUIET ERROR_QUIET)
-
-		if ( batch_stopped EQUAL 0 )
-			message(STATUS "%BATCH-S-SERVICE, the job controller is stopped and disabled")
-		else()
-			message(STATUS "%BATCH-I-SERVICE, the service was not enabled, nothing to disable")
-		endif()
-	endif()
-endif()
 message(STATUS "")

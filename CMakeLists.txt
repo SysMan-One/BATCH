@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-01-31
-#  REV:			01.31.00
+#  IDENT:		X-01-32
+#  REV:			01.32.00
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -147,6 +147,10 @@
 #	18-OCT-2026	RRL	X-01-31	BATCH_K_IDENT raised to X-01-12: every message text is an FAO control
 #				string (BATCHMSG.C X-01-13ECO01), and the test checks that it stays so
 #				(SMOKE.SH X-01-26).
+#
+#	18-OCT-2026	RRL	X-01-32	A System V start script of the controller, ETC/BATCHD.INIT.IN, for a system
+#				without systemd. BATCH_M_SYSVINIT installs it into BATCH_K_INITDIR and is on
+#				by default where the system was not booted by systemd.
 #--
 #
 
@@ -174,6 +178,23 @@ option(BATCH_M_PDF	"Re-render the manuals as PDF from the markdown"			OFF)
 
 set(BATCH_K_SYSTEMDDIR	"/lib/systemd/system"
 					CACHE PATH	"Where the systemd unit is installed")
+
+#
+#  The System V start script is for a system that has no systemd, and is not wanted beside the unit
+#  on one that has: there a "systemctl enable" would give it links in the runlevel directories as
+#  well. Whether the system was booted by systemd is what decides, as sd_booted() decides it. The
+#  configuration is made on the system the subsystem is installed on; a package is built with the
+#  option given explicitly.
+#
+if ( EXISTS "/run/systemd/system" )
+	set(BATCH_K_SYSVDEFAULT	OFF)
+else()
+	set(BATCH_K_SYSVDEFAULT	ON)
+endif()
+
+option(BATCH_M_SYSVINIT	"Install the System V start script of the job controller"	${BATCH_K_SYSVDEFAULT})
+
+set(BATCH_K_INITDIR	"/etc/init.d"	CACHE PATH	"Where the System V start script is installed")
 
 #
 #  Default build type. An empty CMAKE_BUILD_TYPE in a single-configuration generator means
@@ -365,10 +386,17 @@ include(GNUInstallDirs)
 #
 set(BATCH_CFG_SBINDIR	"${CMAKE_INSTALL_FULL_SBINDIR}")
 set(BATCH_CFG_DOCDIR	"${CMAKE_INSTALL_FULL_DOCDIR}")
+set(BATCH_CFG_INITDIR	"${BATCH_K_INITDIR}")
 
 if ( BATCH_M_SYSTEMD )
 	configure_file("${PROJECT_SOURCE_DIR}/etc/batchd.service.in"
 			"${PROJECT_BINARY_DIR}/etc/batchd.service"
+			@ONLY)
+endif()
+
+if ( BATCH_M_SYSVINIT )
+	configure_file("${PROJECT_SOURCE_DIR}/etc/batchd.init.in"
+			"${PROJECT_BINARY_DIR}/etc/batchd.init"
 			@ONLY)
 endif()
 
@@ -494,8 +522,17 @@ message(STATUS "  Manuals as PDF .......... ${BATCH_M_PDF}")
 
 if ( BATCH_M_SYSTEMD )
 	message(STATUS "  systemd unit ............ ${BATCH_K_SYSTEMDDIR}/batchd.service")
-	message(STATUS "  Started at install ...... ${BATCH_M_AUTOSTART}")
 else()
 	message(STATUS "  systemd unit ............ not installed")
+endif()
+
+if ( BATCH_M_SYSVINIT )
+	message(STATUS "  System V start script ... ${BATCH_K_INITDIR}/batchd")
+else()
+	message(STATUS "  System V start script ... not installed")
+endif()
+
+if ( BATCH_M_SYSTEMD OR BATCH_M_SYSVINIT )
+	message(STATUS "  Started at install ...... ${BATCH_M_AUTOSTART}")
 endif()
 message(STATUS "")

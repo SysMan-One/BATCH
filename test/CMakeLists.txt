@@ -1,7 +1,7 @@
 #++
 #  MODULE:		test/CMakeLists.txt
-#  IDENT:		X-01-03
-#  REV:			01.03.00
+#  IDENT:		X-01-04
+#  REV:			01.04.00
 #
 #  FACILITY:		BATCH
 #
@@ -20,6 +20,9 @@
 #	28-JUL-2026	RRL	X-01-02	Comments converted to English.
 #
 #	29-JUL-2026	RRL	X-01-03	The check on the queue primitives of the vendored subproject was added.
+#
+#	18-OCT-2026	RRL	X-01-04	The generated System V start script is checked by the shell that will run
+#				it, and for a placeholder that configure_file left unfilled.
 #--
 #
 
@@ -49,3 +52,18 @@ add_test(NAME	 batch_smoke
 set_tests_properties(batch_smoke PROPERTIES
 	TIMEOUT			120
 	FAIL_REGULAR_EXPRESSION	"%BATCH-[EF]-")
+
+#
+#  The System V start script is generated and runs at boot, where a fault in it is seen by nobody
+#  until the controller turns out not to be running. It is parsed by /bin/sh - not bash, which
+#  forgives what dash does not - and looked over for an @NAME@ the configuration did not fill in.
+#
+if ( BATCH_M_SYSVINIT )
+	add_test(NAME	 batch_initscript
+		 COMMAND /bin/sh -c "/bin/sh -n \"$1\" && ! grep -n '@[A-Z_]*@' \"$1\" && echo '%BATCH-S-INITSCRIPT, parsed'"
+				batch_initscript "${PROJECT_BINARY_DIR}/etc/batchd.init")
+
+	set_tests_properties(batch_initscript PROPERTIES
+		TIMEOUT			10
+		PASS_REGULAR_EXPRESSION	"%BATCH-S-INITSCRIPT")
+endif()

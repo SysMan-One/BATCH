@@ -1,7 +1,7 @@
 #++
 #  MODULE:		src/CMakeLists.txt
-#  IDENT:		X-01-15
-#  REV:			01.15.00
+#  IDENT:		X-01-16
+#  REV:			01.16.00
 #
 #  FACILITY:		BATCH
 #
@@ -61,6 +61,10 @@
 #					rooted at one key, BATCH, instead of putting its thirteen topics at level
 #					1 of the shared catalogue, where they collided with the topics of every
 #					other product on the search path and shadowed HELP's own HELP topic.
+#
+#	18-OCT-2026	RRL	X-01-16	The System V start script is installed where BATCH_M_SYSVINIT asks for it,
+#					and where there is no systemctl the controller is started through it:
+#					update-rc.d gives it its links and the script starts it.
 #--
 #
 
@@ -235,45 +239,52 @@ install(FILES	"${PROJECT_SOURCE_DIR}/doc/batch_users_guide.pdf"
 	DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 
 #
-#  The systemd unit. It is installed but not enabled: whether the controller is to start with the
-#  system is the business of whoever administers it, not of whoever installs the software.
+#  The systemd unit and the System V start script, whichever of them the configuration asks for.
 #
 if ( BATCH_M_SYSTEMD )
 	install(FILES	"${PROJECT_BINARY_DIR}/etc/batchd.service"
 		DESTINATION "${BATCH_K_SYSTEMDDIR}")
+endif()
 
-	#
-	#  The controller is enabled and started where it can be. A subsystem installed and not running
-	#  is a subsystem that answers %BATCH-E-NOCONNECT to the first command tried on it, and the
-	#  reason - that nobody started it - is not what the message says.
-	#
-	#  Three cases are passed over rather than attempted. A staged installation, DESTDIR naming a
-	#  directory a package is assembled in: the unit belongs to the system that will receive the
-	#  package, not to the one building it, and whoever installs it starts the service, ordinarily
-	#  from the post-install script. A system with no SYSTEMCTL. And an installation made by an
-	#  unprivileged user, who has no service to start.
-	#
-	#  A failure is reported and passed over. The subsystem is installed either way, and a
-	#  controller can be started by hand; refusing the installation over it would be out of
-	#  proportion.
-	#
-	#
-	#  The names inside the generated script carry no dollar: the naming of this project puts one in
-	#  every name, and a script parsed at installation will not have it - ${NAME$K_THING} is not a
-	#  variable reference to CMake, and under the policy of the day it is a warning and an empty
-	#  expansion rather than a refusal, so the fault shows itself as a service that was not started
-	#  and not as an error in the script.
-	#
-	if ( BATCH_M_AUTOSTART )
-		install(CODE "
+if ( BATCH_M_SYSVINIT )
+	install(PROGRAMS "${PROJECT_BINARY_DIR}/etc/batchd.init"
+		DESTINATION "${BATCH_K_INITDIR}"
+		RENAME	batchd)
+endif()
+
+#
+#  The controller is enabled and started where it can be. A subsystem installed and not running
+#  is a subsystem that answers %BATCH-E-NOCONNECT to the first command tried on it, and the
+#  reason - that nobody started it - is not what the message says. Under systemd that is
+#  "systemctl enable --now"; without it, update-rc.d gives the start script its links and the
+#  script starts the controller. Neither replaces a controller that is already running: a new
+#  image is taken up by a restart, which is left to whoever installs.
+#
+#  Three cases are passed over rather than attempted. A staged installation, DESTDIR naming a
+#  directory a package is assembled in: the service belongs to the system that will receive the
+#  package, not to the one building it, and whoever installs it starts the service, ordinarily
+#  from the post-install script. A system with neither SYSTEMCTL nor UPDATE-RC.D. And an
+#  installation made by an unprivileged user, who has no service to start.
+#
+#  A failure is reported and passed over. The subsystem is installed either way, and a
+#  controller can be started by hand; refusing the installation over it would be out of
+#  proportion.
+#
+#  The names inside the generated script carry no dollar: the naming of this project puts one in
+#  every name, and a script parsed at installation will not have it - ${NAME$K_THING} is not a
+#  variable reference to CMake, and under the policy of the day it is a warning and an empty
+#  expansion rather than a refusal, so the fault shows itself as a service that was not started
+#  and not as an error in the script.
+#
+if ( BATCH_M_AUTOSTART AND (BATCH_M_SYSTEMD OR BATCH_M_SYSVINIT) )
+	install(CODE "
 if ( NOT \"\$ENV{DESTDIR}\" STREQUAL \"\" )
 	message(STATUS \"%BATCH-I-AUTOSTART, staged installation, the service is left to the package\")
 else()
 	find_program(batch_systemctl systemctl)
+	find_program(batch_updatercd update-rc.d)
 
-	if ( NOT batch_systemctl )
-		message(STATUS \"%BATCH-I-AUTOSTART, no systemctl, the controller is to be started by hand\")
-	else()
+	if ( batch_systemctl AND ${BATCH_M_SYSTEMD} )
 		execute_process(COMMAND \"\${batch_systemctl}\" daemon-reload
 				RESULT_VARIABLE batch_reload OUTPUT_QUIET ERROR_QUIET)
 
@@ -286,8 +297,22 @@ else()
 			message(STATUS \"%BATCH-W-AUTOSTART, the controller was not started, run\"
 				\" systemctl enable --now batchd\")
 		endif()
+	elseif ( NOT batch_systemctl AND batch_updatercd AND ${BATCH_M_SYSVINIT} )
+		execute_process(COMMAND \"\${batch_updatercd}\" batchd defaults
+				RESULT_VARIABLE batch_links OUTPUT_QUIET ERROR_QUIET)
+
+		execute_process(COMMAND \"${BATCH_K_INITDIR}/batchd\" start
+				RESULT_VARIABLE batch_start OUTPUT_QUIET ERROR_QUIET)
+
+		if ( (batch_links EQUAL 0) AND (batch_start EQUAL 0) )
+			message(STATUS \"%BATCH-S-AUTOSTART, the job controller is enabled and running\")
+		else()
+			message(STATUS \"%BATCH-W-AUTOSTART, the controller was not started, run\"
+				\" update-rc.d batchd defaults; service batchd start\")
+		endif()
+	else()
+		message(STATUS \"%BATCH-I-AUTOSTART, no service manager to use, the controller is to be started by hand\")
 	endif()
 endif()
 ")
-	endif()
 endif()

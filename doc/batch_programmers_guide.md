@@ -656,6 +656,7 @@ the controller and some of them are orphaned on purpose by the restart check.
 | `src/CMakeLists.txt` | The targets and the installation |
 | `test/CMakeLists.txt` | Registration of the tests |
 | `etc/batchd.service.in` | Template of the systemd unit |
+| `etc/batchd.init.in` | Template of the System V start script, for a system without systemd |
 | `cmake/uninstall.cmake.in` | The removal script |
 | `src/batchvers.h.in` | Template of the identification header |
 

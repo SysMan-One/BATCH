@@ -169,7 +169,7 @@ a successful job, submit it with `/RETAIN=ALWAYS`.
 |---|---|
 | Operating system | Linux. The subsystem uses UNIX domain sockets, the `SO_PEERCRED` socket option, `daemon(3)` and `poll(2)`; a build elsewhere is stopped during configuration. |
 | Build tools | CMake 3.16 or later and a C compiler supporting gnu11. |
-| Service supervisor | systemd, if the controller is to start with the system. It is not otherwise required. |
+| Service supervisor | systemd, or System V init with `update-rc.d` and `start-stop-daemon`, if the controller is to start with the system. It is not otherwise required. |
 | Privilege | The installation writes to system directories and needs the privileged account. Building and testing do not. |
 
 Two packages must be installed beforehand: **StarLet**, which is UTILITY$ROUTINES, and **HELP**.
@@ -204,12 +204,14 @@ Section 3.3 lists the other settings that are fixed at configuration time.
 | *prefix*`/bin/batch` | the command line utility |
 | *prefix*`/sbin/batchd` | the job controller |
 | *prefix*`/share/doc/BATCH/` | the manuals and the summary, as markdown and, when asked for, as PDF |
-| `/lib/systemd/system/batchd.service` | the unit of the controller |
+| `/lib/systemd/system/batchd.service` | the unit of the controller, on a system booted by systemd |
+| `/etc/init.d/batchd` | the System V start script of the controller, on a system without systemd |
 | `/var/spool/batch/` | the subsystem root: the queue journal and the socket |
 | `/var/spool/batch/log/` | the log files of jobs |
 
 The location of the unit is `BATCH_K_SYSTEMDDIR`; setting `BATCH_M_SYSTEMD` to `OFF` leaves it out
-altogether, which is what a system without systemd calls for.
+altogether. The start script is installed into `BATCH_K_INITDIR` when `BATCH_M_SYSVINIT` is `ON`,
+which it is by default on a system that was not booted by systemd.
 
 ## 2.4 The Help Library
 
@@ -242,11 +244,15 @@ command is unaffected either way — it reads the library directly and consults 
 
 ## 2.5 Starting the Controller with the System
 
-The unit is installed but **not enabled**. Whether the controller starts with the system is for
-whoever administers it to decide.
+The installation **enables and starts** the controller, so that the first command does not answer
+`%BATCH-E-NOCONNECT`. Configure with `BATCH_M_AUTOSTART=OFF` to leave that to the administrator.
+A controller that is already running is not replaced: after an upgrade, restart it.
+
+Under systemd:
 
 ```
 # systemctl enable --now batchd
+# systemctl restart batchd          # after an upgrade
 # systemctl status batchd
 ```
 
@@ -263,7 +269,19 @@ the system rather than a log of its own:
 > is a session of its own and is meant to outlive the controller; the default of killing the whole
 > control group would take every running job with it.
 
-Without systemd the controller is started as any other daemon, and detaches by itself:
+Without systemd the start script `/etc/init.d/batchd` does the same. The installation gives it its
+links in the runlevel directories with `update-rc.d` and starts the controller through it:
+
+```
+# update-rc.d batchd defaults
+# service batchd start
+# service batchd restart            # after an upgrade
+# service batchd status
+```
+
+The controller then detaches by itself and keeps its own log, `/var/spool/batch/batchd.log`.
+
+With neither, the controller is started as any other daemon, and detaches by itself:
 
 ```
 # /usr/local/sbin/batchd /ROOT=/var/spool/batch /JOB_LIMIT=8
@@ -300,11 +318,9 @@ and nothing that was not installed is touched. The subsystem root and the log di
 only while they are empty: a removal of the software is not a reason to discard the queue journal or
 the logs of jobs.
 
-Disabling the service is left to the administrator and is stated at the end of the removal:
-
-```
-# systemctl disable --now batchd
-```
+Before any file goes, the removal stops the controller and disables the service: under systemd
+with `systemctl disable --now batchd`, without it through the start script and
+`update-rc.d -f batchd remove`. A staged removal leaves both to the package.
 
 ---
 
@@ -366,6 +382,9 @@ These are compiled in and are altered by configuring the build afresh:
 | `BATCH_K_FACILITY` | `BATCH` | The facility name appearing in messages |
 | `BATCH_K_SYSTEMDDIR` | `/lib/systemd/system` | Where the unit is installed |
 | `BATCH_M_SYSTEMD` | `ON` | Whether the unit is installed at all |
+| `BATCH_K_INITDIR` | `/etc/init.d` | Where the System V start script is installed |
+| `BATCH_M_SYSVINIT` | `ON` without systemd | Whether the start script is installed |
+| `BATCH_M_AUTOSTART` | `ON` | Enable and start the controller at installation |
 | `BATCH_M_PDF` | `OFF` | Render the manuals as PDF and install them as well |
 | `BATCH_M_TESTS` | `ON` | Whether the tests are built |
 | `BATCH_M_STRICT` | `OFF` | Treat compiler diagnostics as errors |
@@ -1843,8 +1862,10 @@ The message names the socket the utility looked for. Take the causes in order.
 **The controller is not running.**
 
 ```
-# systemctl status batchd
+# systemctl status batchd           # under systemd
 # systemctl start batchd
+# service batchd status             # without it
+# service batchd start
 ```
 
 **It is running with a different root.** The utility looks in `BATCH_ROOT`, or in the compiled-in

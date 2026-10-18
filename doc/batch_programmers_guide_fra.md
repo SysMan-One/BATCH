@@ -708,6 +708,7 @@ redémarrage.
 | `src/CMakeLists.txt` | Les cibles et l'installation |
 | `test/CMakeLists.txt` | L'enregistrement des tests |
 | `etc/batchd.service.in` | Le modèle de l'unité systemd |
+| `etc/batchd.init.in` | Le modèle du script de démarrage System V, pour un système sans systemd |
 | `cmake/uninstall.cmake.in` | Le script de retrait |
 | `src/batchvers.h.in` | Le modèle de l'en-tête d'identification |
 

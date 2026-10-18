@@ -1,0 +1,107 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          batchd
+# Required-Start:    $local_fs $remote_fs $syslog
+# Required-Stop:     $local_fs $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: @BATCH_CFG_FACILITY@ job controller
+# Description:       The job controller of the @BATCH_CFG_FACILITY@ facility: keeps the queue
+#                    and runs the jobs submitted by "batch submit".
+### END INIT INFO
+#++
+#  MODULE:		batchd.init.in
+#  IDENT:		X-01-01
+#  REV:			01.01.00
+#
+#  FACILITY:		BATCH
+#
+#  ABSTRACT:		Template of the System V start script of the job controller, for a system that
+#			has no systemd; the counterpart of BATCHD.SERVICE.IN. CMake fills in the paths
+#			at configuration time and installs the result as /etc/init.d/batchd.
+#
+#			Unlike under systemd, the controller is not run in the foreground: it detaches
+#			by itself and keeps its own log, batchd.log in the root directory. No PID file
+#			is kept - the process is found by its image.
+#
+#			  # service batchd start|stop|restart|status
+#
+#  AUTHOR:		StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#  CREATION DATE:	18-OCT-2026
+#
+#  MODIFICATION HISTORY:
+#
+#	18-OCT-2026	RRL	X-01-01	Initial revision.
+#--
+#
+
+NAME=batchd
+DAEMON=@BATCH_CFG_SBINDIR@/batchd
+ROOT=@BATCH_CFG_SPOOLROOT@
+
+#
+#  SIGTERM lets the controller write its journal and leave; the systemd unit allows it 30 s as well.
+#  Only the controller is signalled: a job is a session of its own and is meant to outlive it.
+#
+STOP_TIMEOUT=30
+
+[ -x "$DAEMON" ] || { echo "$NAME: $DAEMON is not there"; exit 5; }
+
+pid_of_daemon ()
+{
+	pid=$(pidof -s "$DAEMON" 2>/dev/null)
+	[ -n "$pid" ]
+}
+
+do_start ()
+{
+	if pid_of_daemon; then
+		echo "$NAME is already running (pid $pid)"
+		return 0
+	fi
+
+	start-stop-daemon --start --quiet --exec "$DAEMON" -- /ROOT="$ROOT"
+
+	sleep 1
+
+	if pid_of_daemon; then
+		echo "$NAME started (pid $pid), log is $ROOT/batchd.log"
+	else
+		echo "$NAME failed to start, see $ROOT/batchd.log"
+		return 1
+	fi
+}
+
+do_stop ()
+{
+	if ! pid_of_daemon; then
+		echo "$NAME is not running"
+		return 0
+	fi
+
+	start-stop-daemon --stop --quiet --exec "$DAEMON" --retry "TERM/$STOP_TIMEOUT/KILL/5"
+	echo "$NAME stopped"
+}
+
+do_status ()
+{
+	if pid_of_daemon; then
+		echo "$NAME is running (pid $pid)"
+		return 0
+	else
+		echo "$NAME is not running"
+		return 3
+	fi
+}
+
+case "$1" in
+	start)		do_start ;;
+	stop)		do_stop ;;
+	restart|force-reload)
+			do_stop
+			do_start ;;
+	status)		do_status ;;
+	*)		echo "Usage: $0 {start|stop|restart|force-reload|status}"
+			exit 2 ;;
+esac

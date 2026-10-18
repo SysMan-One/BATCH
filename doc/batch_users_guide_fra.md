@@ -180,7 +180,8 @@ préparation — faite avec `DESTDIR` — laisse l'un et l'autre à qui installe
 | `<préfixe>/share/help/ru/batch_rus.hlb` | L'aide, en russe |
 | `<préfixe>/share/help/fr/batch_fra.hlb` | L'aide, en français |
 | `<préfixe>/share/doc/BATCH/` | Les manuels |
-| `/lib/systemd/system/batchd.service` | L'unité systemd |
+| `/lib/systemd/system/batchd.service` | L'unité systemd, sur un système démarré par systemd |
+| `/etc/init.d/batchd` | Le script de démarrage System V, sur un système sans systemd |
 | `/var/spool/batch/` | La racine du sous-système |
 
 ## 2.4 La bibliothèque d'aide
@@ -207,8 +208,15 @@ Après une installation, le catalogue partagé est à reconstruire :
 
 ## 2.5 Lancer le contrôleur avec le système
 
+L'installation **active et lance** le contrôleur ; `BATCH_M_AUTOSTART=OFF` laisse ce soin à
+l'administrateur. Un contrôleur qui tourne déjà n'est pas remplacé : après une mise à jour,
+relancez-le.
+
+Sous systemd :
+
 ```sh
 # systemctl enable --now batchd
+# systemctl restart batchd          # après une mise à jour
 # systemctl status batchd
 ```
 
@@ -218,8 +226,21 @@ Les diagnostics du contrôleur vont dans le journal du système lorsqu'il tourne
 # journalctl -u batchd -f
 ```
 
-Lancé à la main, il écrit dans `<racine>/batchd.log` et se détache ; le terminal qu'il quitte est
-averti de ce qu'il est advenu et du fichier où lire la suite.
+Sans systemd, le script `/etc/init.d/batchd` fait de même. L'installation lui donne ses liens par
+`update-rc.d` et lance le contrôleur par lui :
+
+```sh
+# update-rc.d batchd defaults
+# service batchd start
+# service batchd restart            # après une mise à jour
+# service batchd status
+```
+
+Le script est installé dans `BATCH_K_INITDIR` (`/etc/init.d`) lorsque `BATCH_M_SYSVINIT` vaut `ON`,
+ce qui est le cas par défaut sur un système que systemd n'a pas démarré.
+
+Lancé par ce script ou à la main, il écrit dans `<racine>/batchd.log` et se détache ; le terminal
+qu'il quitte est averti de ce qu'il est advenu et du fichier où lire la suite.
 
 ## 2.6 Vérifier l'installation
 
@@ -237,9 +258,10 @@ $ cat essai_1.log
 # cmake --build build --target uninstall
 ```
 
-Le retrait arrête et désactive le service avant que son fichier d'unité ne s'en aille : une unité
+Le retrait arrête et désactive le service avant qu'aucun fichier ne s'en aille : une unité
 retirée alors que le service est encore activé laisse systemd se plaindre à chaque démarrage d'une
-unité qu'il ne trouve pas.
+unité qu'il ne trouve pas. Sans systemd, il arrête le contrôleur par le script de démarrage et en
+retire les liens par `update-rc.d -f batchd remove`.
 
 ---
 
@@ -723,8 +745,10 @@ Les diagnostics du contrôleur sont le premier endroit à regarder :
 **Il ne tourne pas.**
 
 ```sh
-# systemctl status batchd
+# systemctl status batchd           # sous systemd
 # systemctl start batchd
+# service batchd status             # sans systemd
+# service batchd start
 ```
 
 **L'utilitaire et le contrôleur ne s'accordent pas sur la racine.** Le socket est sous la racine ;
