@@ -1,7 +1,7 @@
 #++
 #  MODULE:		src/CMakeLists.txt
-#  IDENT:		X-02-02
-#  REV:			02.02.00
+#  IDENT:		X-02-02ECO01
+#  REV:			02.02.01
 #
 #  FACILITY:		BATCH
 #
@@ -67,6 +67,10 @@
 #					update-rc.d gives it its links and the script starts it.
 #
 #	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+#
+#	18-OCT-2026	RRL	X-02-02ECO01	The service was never started at installation since X-01-16: the options
+#					were put into the installation script as the bare words ON and OFF, which
+#					IF() takes there for names of variables. They are passed as variables now.
 #--
 #
 
@@ -272,6 +276,10 @@ endif()
 #  controller can be started by hand; refusing the installation over it would be out of
 #  proportion.
 #
+#  The options reach the generated script as variables, not as the bare words ON and OFF: an
+#  installation script runs with policy CMP0012 unset, so IF() takes ON for the name of a variable
+#  that is not defined, and the service was passed over on every system.
+#
 #  The names inside the generated script carry no dollar: the naming of this project puts one in
 #  every name, and a script parsed at installation will not have it - ${NAME$K_THING} is not a
 #  variable reference to CMake, and under the policy of the day it is a warning and an empty
@@ -286,7 +294,10 @@ else()
 	find_program(batch_systemctl systemctl)
 	find_program(batch_updatercd update-rc.d)
 
-	if ( batch_systemctl AND ${BATCH_M_SYSTEMD} )
+	set(batch_m_systemd ${BATCH_M_SYSTEMD})
+	set(batch_m_sysvinit ${BATCH_M_SYSVINIT})
+
+	if ( batch_systemctl AND batch_m_systemd )
 		execute_process(COMMAND \"\${batch_systemctl}\" daemon-reload
 				RESULT_VARIABLE batch_reload OUTPUT_QUIET ERROR_QUIET)
 
@@ -299,7 +310,7 @@ else()
 			message(STATUS \"%BATCH-W-AUTOSTART, the controller was not started, run\"
 				\" systemctl enable --now batchd\")
 		endif()
-	elseif ( NOT batch_systemctl AND batch_updatercd AND ${BATCH_M_SYSVINIT} )
+	elseif ( NOT batch_systemctl AND batch_updatercd AND batch_m_sysvinit )
 		execute_process(COMMAND \"\${batch_updatercd}\" batchd defaults
 				RESULT_VARIABLE batch_links OUTPUT_QUIET ERROR_QUIET)
 
