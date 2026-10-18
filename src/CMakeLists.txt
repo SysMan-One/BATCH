@@ -1,7 +1,7 @@
 #++
 #  MODULE:		src/CMakeLists.txt
-#  IDENT:		X-01-16
-#  REV:			01.16.00
+#  IDENT:		X-02-02
+#  REV:			02.02.00
 #
 #  FACILITY:		BATCH
 #
@@ -65,6 +65,8 @@
 #	18-OCT-2026	RRL	X-01-16	The System V start script is installed where BATCH_M_SYSVINIT asks for it,
 #					and where there is no systemctl the controller is started through it:
 #					update-rc.d gives it its links and the script starts it.
+#
+#	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 #--
 #
 

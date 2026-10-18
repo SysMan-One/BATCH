@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		QUEUE.C
-**  IDENT:		X-01-01
-**  REV:		01.01.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -27,6 +27,8 @@
 **  MODIFICATION HISTORY:
 **
 **	29-JUL-2026	RRL	X-01-01	Initial revision.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -36,8 +38,8 @@
 
 #undef	__MODULE__
 #define	__MODULE__	"QUEUE"
-#define	__IDENT__	"X-01-01"
-#define	__REV__		"01.01.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #define	QUE$K_NITEM	5	/* Number of entries the queue is filled with */
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-01-26
-#  REV:			01.26.00
+#  IDENT:		X-02-02
+#  REV:			02.02.00
 #
 #  FACILITY:		BATCH
 #
@@ -100,6 +100,8 @@
 #					and the mnemonic alone did not show it. A static check is added that every
 #					message text and the message reference of the manuals are written for the
 #					FAO engine and that every diagnostic goes through $PUTMSG_FAO.
+#
+#	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 #--
 #
 

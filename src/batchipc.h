@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHIPC.H
-**  IDENT:		X-01-07
-**  REV:		01.07.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -40,6 +40,8 @@
 **
 **	 8-OCT-2026	RRL	X-01-07	SHOW$M_ALL now adds the entries kept after a job that succeeded: the jobs
 **				that wait are shown without it (BATCHD.C X-01-32).
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -51,8 +53,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHIPC"
-#define	__IDENT__	"X-01-07"
-#define	__REV__		"01.07.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #include	"batchdef.h"
 

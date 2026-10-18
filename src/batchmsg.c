@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.C
-**  IDENT:		X-01-13ECO01
-**  REV:		01.13.01
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -70,6 +70,8 @@
 **	18-OCT-2026	RRL	X-01-13ECO01	Text of BATCH$_IVENTRY carried a printf conversion that X-01-10 had
 **				missed, and the FAO engine printed it as it stood: "%s" does not name a queue
 **				entry. It is !AZ now.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -82,8 +84,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-01-13ECO01"
-#define	__REV__		"01.13.01"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 /*
 **  A single row of the message table. The text is held in an ASCIC container, so its length is

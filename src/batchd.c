@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-01-32
-**  REV:		01.32.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -243,6 +243,8 @@
 **				- and leaves out only the entry kept after a job that succeeded, which /ALL
 **				adds. A job held until next week had been invisible to an ordinary SHOW, and
 **				a queue that seemed to have lost its weekly job had it all the while.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -281,8 +283,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-01-32"
-#define	__REV__		"01.32.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/

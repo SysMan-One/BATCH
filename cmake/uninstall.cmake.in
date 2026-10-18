@@ -1,7 +1,7 @@
 #++
 #  MODULE:		uninstall.cmake.in
-#  IDENT:		X-01-04
-#  REV:			01.04.00
+#  IDENT:		X-02-02
+#  REV:			02.02.00
 #
 #  FACILITY:		BATCH
 #
@@ -32,6 +32,8 @@
 #				image were already removed when it was stopped, so the stop failed and the
 #				controller went on running. A System V start script is stopped and its
 #				links removed where there is no systemctl.
+#
+#	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 #--
 #
 

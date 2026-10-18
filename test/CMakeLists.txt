@@ -1,7 +1,7 @@
 #++
 #  MODULE:		test/CMakeLists.txt
-#  IDENT:		X-01-04
-#  REV:			01.04.00
+#  IDENT:		X-02-02
+#  REV:			02.02.00
 #
 #  FACILITY:		BATCH
 #
@@ -23,6 +23,8 @@
 #
 #	18-OCT-2026	RRL	X-01-04	The generated System V start script is checked by the shell that will run
 #				it, and for a placeholder that configure_file left unfilled.
+#
+#	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 #--
 #
 

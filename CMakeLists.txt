@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-01-32
-#  REV:			01.32.00
+#  IDENT:		X-02-02
+#  REV:			02.02.00
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -151,6 +151,10 @@
 #	18-OCT-2026	RRL	X-01-32	A System V start script of the controller, ETC/BATCHD.INIT.IN, for a system
 #				without systemd. BATCH_M_SYSVINIT installs it into BATCH_K_INITDIR and is on
 #				by default where the system was not booted by systemd.
+#
+#	18-OCT-2026	RRL	X-02-02	BATCH_K_IDENT raised to X-02-02, and every module of the facility with it:
+#				the System V start script of the controller and the service stopped before
+#				its files are removed on uninstall.
 #--
 #
 
@@ -165,7 +169,7 @@ project(BATCH
 #  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
 #
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X-01-12"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X-02-02"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")

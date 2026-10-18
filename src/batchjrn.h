@@ -2,8 +2,8 @@
 **++
 **
 **  MODULE:		batchjrn.h
-**  IDENT:		X-01-01
-**  REV:		01.01.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -36,6 +36,8 @@
 **
 **	 2-AUG-2026	RRL	X-01-01	Initial revision.
 **
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -47,8 +49,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHJRN"
-#define	__IDENT__	"X-01-01"
-#define	__REV__		"01.01.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #include	"batchdef.h"
 #include	"avproto.h"

@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHVERS.H
-**  IDENT:		X-01-02
-**  REV:		01.02.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -22,6 +22,8 @@
 **	28-JUL-2026	RRL	X-01-01	Initial revision.
 **
 **	28-JUL-2026	RRL	X-01-02	Comments converted to English.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 

@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCH.C
-**  IDENT:		X-01-35
-**  REV:		01.35.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -204,6 +204,8 @@
 **				top of the library: HELP SUBMIT had answered NOSUCHTOPIC everywhere the new
 **				library was installed, and the smoke test had passed only where an older
 **				library was still lying in the place it is looked for first.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -243,8 +245,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCH"
-#define	__IDENT__	"X-01-35"
-#define	__REV__		"01.35.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #define	BATCH$K_MINABBR	2				/* Shortest admissible abbreviation of a qualifier 			*/
 

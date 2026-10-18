@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.H
-**  IDENT:		X-01-08
-**  REV:		01.08.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -58,6 +58,8 @@
 **
 **	 8-SEP-2026	RRL	X-01-08	Conditions BATCH$_ENTMODIFIED, BATCH$_NOTMODIFIABLE and BATCH$_NOTHINGSET
 **				added for the SET ENTRY command.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -69,8 +71,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-01-08"
-#define	__REV__		"01.08.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 /*
 **  The layout of a condition value, the severity codes STS$K_* and the macros $FAC, $MSG, $SEV,

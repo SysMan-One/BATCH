@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHDEF.H
-**  IDENT:		X-01-12
-**  REV:		01.12.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 **			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -66,6 +66,8 @@
 **
 **	18-OCT-2026	RRL	X-01-12	The note on diagnostics names $PUTMSG_FAO, through which every one of them
 **				is issued, and an FAO control string as the text of a message.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -77,8 +79,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHDEF"
-#define	__IDENT__	"X-01-12"
-#define	__REV__		"01.12.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #include	<sys/types.h>
 #include	<stdarg.h>

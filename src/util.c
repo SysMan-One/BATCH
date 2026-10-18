@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		UTIL.C
-**  IDENT:		X-01-13
-**  REV:		01.13.00
+**  IDENT:		X-02-02
+**  REV:		02.02.00
 **
 **  FACILITY:		BATCH
 **
@@ -71,6 +71,8 @@
 **
 **	 8-SEP-2026	RRL	X-01-13	UTIL$FMT_SETENT renders the attributes a SET ENTRY request carries, for
 **				the confirmation of the utility and the log of the controller alike.
+**
+**	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **--
 */
 
@@ -96,8 +98,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"UTIL"
-#define	__IDENT__	"X-01-13"
-#define	__REV__		"01.13.00"
+#define	__IDENT__	"X-02-02"
+#define	__REV__		"02.02.00"
 
 #define	UTIL$K_SECDAY	86400	/* Seconds in a day */
 #define	UTIL$K_OUTSZ	1024	/* Working buffer of UTIL$PUT */
