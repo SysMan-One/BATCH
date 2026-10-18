@@ -17,8 +17,11 @@ out/
 *.gcda
 *.gcov
 
-#  Files generated at configuration time
+#  Files generated at configuration time; inside the source tree when the build was run there
 batchvers.h
+/cmake/uninstall.cmake
+/etc/batchd.service
+/etc/batchd.init
 
 #  CMake working files, in case the build was run inside the source tree
 CMakeCache.txt
