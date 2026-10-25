@@ -495,7 +495,11 @@ entrées soient touchées.
 
 Seul l'utilisateur privilégié peut le demander : suspendre retient le
 travail de tous ceux qui se servent de la file, et la propriété d'un
-travail ne dit rien de la file où il attend.
+travail ne dit rien de la file où il attend. Tout autre est refusé :
+
+```
+%BATCH-E-NOPRIVQUE, uid 1000 may not pause or resume queue slow
+```
 
 # PURGE -- retirer les entrées des travaux finis
 

@@ -699,7 +699,12 @@ donnée en français.
 
 **BATCH-E-NOPRIVUSER**, uid *n* may not submit a job to run as *nom*
 
-> Seul l'utilisateur privilégié peut demander `/USER`, ou suspendre une file.
+> Seul l'utilisateur privilégié peut demander `/USER`.
+
+**BATCH-E-NOPRIVQUE**, uid *n* may not pause or resume queue *nom*
+
+> Seul l'utilisateur privilégié peut suspendre une file ou la laisser repartir : suspendre retient le
+> travail de tous ceux qui s'en servent. Adressez-vous à l'administrateur.
 
 **BATCH-S-RUNASUSER**, job *n* submitted by uid *u* to run as *nom*
 

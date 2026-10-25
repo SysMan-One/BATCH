@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.H
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -60,6 +60,9 @@
 **				added for the SET ENTRY command.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	25-OCT-2026	RRL	X-02-02ECO01	Condition BATCH$_NOPRIVQUE: a refused QUEUE /PAUSE or /RESUME was
+**				reported as BATCH$_NOPRIVUSER, "may not submit a job to run as <queue>".
 **--
 */
 
@@ -217,6 +220,7 @@
 #define	BATCH$_QUEUEDUNTIL	$BATCH_COND( 48, STS$K_SUCCESS)	/* Job queued and held until a time */
 #define	BATCH$_RUNASUSER	$BATCH_COND( 44, STS$K_SUCCESS)	/* A job was submitted to run as another user */
 #define	BATCH$_NOPRIVUSER	$BATCH_COND( 45, STS$K_ERROR)	/* Not privileged to submit for another user */
+#define	BATCH$_NOPRIVQUE	$BATCH_COND(120, STS$K_ERROR)	/* Not privileged to pause or resume a queue */
 #define	BATCH$_NOSUCHUSER	$BATCH_COND(102, STS$K_ERROR)	/* No such user */
 #define	BATCH$_IVCPU		$BATCH_COND(100, STS$K_ERROR)	/* Unparsable processor list */
 #define	BATCH$_IVVERB		$BATCH_COND( 97, STS$K_ERROR)	/* Unrecognized command 					*/

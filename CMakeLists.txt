@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-02-02ECO01
-#  REV:			02.02.01
+#  IDENT:		X-02-02ECO02
+#  REV:			02.02.02
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -158,6 +158,9 @@
 #
 #	18-OCT-2026	RRL	X-02-02ECO01	BATCH_K_IDENT raised to X-02-02ECO01: the service is started at installation
 #					again (SRC/CMAKELISTS.TXT X-02-02ECO01).
+#
+#	25-OCT-2026	RRL	X-02-02ECO02	BATCH_K_IDENT raised to X-02-02ECO02: a refused QUEUE /PAUSE or /RESUME
+#					is BATCH$_NOPRIVQUE (BATCHD.C X-02-02ECO01).
 #--
 #
 
@@ -172,7 +175,7 @@ project(BATCH
 #  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
 #
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X-02-02ECO01"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X-02-02ECO02"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")

@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -245,6 +245,9 @@
 **				a queue that seemed to have lost its weekly job had it all the while.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	25-OCT-2026	RRL	X-02-02ECO01	A refused QUEUE /PAUSE or /RESUME is reported as BATCH$_NOPRIVQUE: it
+**				was BATCH$_NOPRIVUSER, which spoke of submitting a job to run as the queue.
 **--
 */
 
@@ -2918,7 +2921,7 @@ int		l_sts;
 			*/
 			if ( a_conn->cn_uid )
 				{
-				l_rsp.mh_sts = (unsigned int) $PUTMSG_FAO(BATCH$_NOPRIVUSER, a_conn->cn_uid, l_qn);
+				l_rsp.mh_sts = (unsigned int) $PUTMSG_FAO(BATCH$_NOPRIVQUE, a_conn->cn_uid, l_qn);
 				break;
 				}
 

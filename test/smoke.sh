@@ -1,8 +1,8 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-02-02
-#  REV:			02.02.00
+#  IDENT:		X-02-02ECO01
+#  REV:			02.02.01
 #
 #  FACILITY:		BATCH
 #
@@ -102,6 +102,12 @@
 #					FAO engine and that every diagnostic goes through $PUTMSG_FAO.
 #
 #	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+#
+#	25-OCT-2026	RRL	X-02-02ECO01 The check of a paused queue is made by the privileged user only: the
+#					controller grants /PAUSE to him alone, and run by anybody else the check
+#					failed and every check after it with it. Anybody else is now shown that
+#					the pause is refused, as BATCH$_NOPRIVQUE, and the queue stays open; the
+#					Russian and French User's Guides are to speak of NOPRIVQUE.
 #--
 #
 
@@ -1095,11 +1101,13 @@ BATCH_ROOT="${g_root}/querun" "${g_batch}" submit "${g_root}/scripts/ok.sh" /QUE
 	>"${g_root}/noque.txt" 2>&1
 l_sts=$?
 
-	#
-	#  A paused queue starts nothing, and its entries are not disturbed: that is what pausing is
-	#  for. SHOW/QUEUES carries the table in the same reply as the state of the controller, so the
-	#  two cannot disagree.
-	#
+#
+#  A paused queue starts nothing, and its entries are not disturbed: that is what pausing is for.
+#  SHOW/QUEUES carries the table in the same reply as the state of the controller, so the two cannot
+#  disagree. Pausing withholds the work of everybody who uses the queue, so it is granted to the
+#  privileged user alone; anybody else is refused and the queue stays as it was.
+#
+if [ "`id -u`" = "0" ] ; then
 	BATCH_ROOT="${g_root}/querun" "${g_batch}" queue slow /PAUSE >/dev/null 2>&1
 
 	BATCH_ROOT="${g_root}/querun" "${g_batch}" submit "${g_root}/scripts/long.sh" \
@@ -1113,6 +1121,16 @@ l_sts=$?
 
 	[ "${l_state}" = "Pending" ] && [ "${l_shown}" = "paused" ]
 	l_check $? "a paused queue starts nothing and says so in SHOW/QUEUES"
+else
+	BATCH_ROOT="${g_root}/querun" "${g_batch}" queue slow /PAUSE >"${g_root}/nopause.txt" 2>&1
+	l_psts=$?
+
+	l_shown=`BATCH_ROOT="${g_root}/querun" "${g_batch}" show /queues 2>/dev/null \
+		| awk '/^ slow/ { print $NF }'`
+
+	[ "${l_psts}" != "0" ] && grep -q "NOPRIVQUE" "${g_root}/nopause.txt" && [ "${l_shown}" = "open" ]
+	l_check $? "a queue is not paused by anybody but the privileged user"
+fi
 
 kill "${l_qpid}" 2>/dev/null
 wait "${l_qpid}" 2>/dev/null
@@ -1277,7 +1295,7 @@ for l_lang in rus fra ; do
 
 	for l_name in SUBMIT SHOW DELETE RELEASE PURGE SYNC QUEUE ANALYZE "SET ENTRY" \
 			PURGED NOTCONF NOSUCHQUE SCRIPTCHG QUEORPHAN SYNCFAIL SYNCTMO \
-			ENTMODIFIED NOTMODIFIABLE NOTHINGSET ; do
+			ENTMODIFIED NOTMODIFIABLE NOTHINGSET NOPRIVQUE ; do
 		grep -q "${l_name}" "${g_srcdir}/doc/batch_users_guide_${l_lang}.md" \
 			|| l_missing="${l_missing} ${l_name}"
 	done

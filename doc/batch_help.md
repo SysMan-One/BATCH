@@ -518,7 +518,11 @@ queue whose jobs must wait without their entries being touched.
 
 Only the privileged user may ask for it: pausing withholds the work
 of everybody who uses the queue, and ownership of a job says nothing
-about the queue it waits in.
+about the queue it waits in. Anybody else is refused:
+
+```
+%BATCH-E-NOPRIVQUE, uid 1000 may not pause or resume queue slow
+```
 
 # PURGE -- remove the entries of finished jobs
 

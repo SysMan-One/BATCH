@@ -1427,6 +1427,12 @@ string, `!UL` or `!SL` for a number, `!8XL` for a hexadecimal value - marks wher
 
     *User action:* The job was running when the controller stopped and its outcome is unknown. Submit it again, with /RESTART if it should survive the next stop.
 
+**NOPRIVQUE**, error
+
+    uid !SL may not pause or resume queue !AZ
+
+    *User action:* Only the privileged user may pause or resume a queue: pausing withholds the work of everybody who uses it. Ask the administrator.
+
 **NOSLOT**, error
 
     the job table is full, capacity !SL entries, while !AZ

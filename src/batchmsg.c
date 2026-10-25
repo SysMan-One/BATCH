@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.C
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -72,6 +72,8 @@
 **				entry. It is !AZ now.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	25-OCT-2026	RRL	X-02-02ECO01	Text of BATCH$_NOPRIVQUE (BATCHMSG.H X-02-02ECO01).
 **--
 */
 
@@ -183,6 +185,7 @@ static	EMSG_RECORD	s_msgtab [] =
 	$MSGREC(BATCH$_QUEUEDUNTIL,	"QUEUEDUNTIL, job !AZ queued on !AZ as entry !UL, holding until !AZ"		),
 	$MSGREC(BATCH$_RUNASUSER,	"RUNASUSER, job !UL submitted by uid !SL to run as !AZ (uid !SL, gid !SL)"		),
 	$MSGREC(BATCH$_NOPRIVUSER,	"NOPRIVUSER, uid !SL may not submit a job to run as !AZ"			),
+	$MSGREC(BATCH$_NOPRIVQUE,	"NOPRIVQUE, uid !SL may not pause or resume queue !AZ"			),
 	$MSGREC(BATCH$_NOSUCHUSER,	"NOSUCHUSER, there is no user !AZ on this system"				),
 	$MSGREC(BATCH$_IVCPU,		"IVCPU, unparsable processor list /CPU=!AZ"					),
 	$MSGREC(BATCH$_IVVERB,		"IVVERB, unrecognized command"						),
