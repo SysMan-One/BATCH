@@ -2,8 +2,8 @@
 **++
 **
 **  MODULE:		batchjrn.h
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -38,6 +38,8 @@
 **
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	28-OCT-2026	CLD	X-02-02ECO01	Tag JRN$K_FSID. A record written before it decodes the field as zero.
 **--
 */
 
@@ -49,8 +51,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHJRN"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO01"
+#define	__REV__		"02.02.01"
 
 #include	"batchdef.h"
 #include	"avproto.h"
@@ -105,6 +107,7 @@ enum	{
 	JRN$K_INO,
 	JRN$K_MTIME,
 	JRN$K_SIZE,						/* Time execution ended					*/
+	JRN$K_FSID,						/* File system of the script, from statfs(2)		*/
 
 	JRN$K_QUEUE	= 64,					/* Name of the queue					*/
 	JRN$K_NAME,						/* Name of the job					*/
@@ -135,6 +138,7 @@ static	inline	int	batchjrn$known (unsigned a_tag)
 		case	JRN$K_QTIME:	case	JRN$K_AFTER:	case	JRN$K_STIME:
 		case	JRN$K_ETIME:
 		case	JRN$K_DEV:	case	JRN$K_INO:	case	JRN$K_MTIME:	case	JRN$K_SIZE:
+		case	JRN$K_FSID:
 		case	JRN$K_QUEUE:	case	JRN$K_NAME:	case	JRN$K_CPUS:
 		case	JRN$K_SCRIPT:	case	JRN$K_LOGFILE:	case	JRN$K_CWD:
 		case	JRN$K_USER:

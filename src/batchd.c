@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-02-02ECO01
-**  REV:		02.02.01
+**  IDENT:		X-02-02ECO02
+**  REV:		02.02.02
 **
 **  FACILITY:		BATCH
 **
@@ -248,6 +248,14 @@
 **
 **	25-OCT-2026	RRL	X-02-02ECO01	A refused QUEUE /PAUSE or /RESUME is reported as BATCH$_NOPRIVQUE: it
 **				was BATCH$_NOPRIVUSER, which spoke of submitting a job to run as the queue.
+**
+**	28-OCT-2026	CLD	X-02-02ECO02	The script is pinned by its file system as well (JB_FSID, from statfs(2)),
+**				and the device number alone may then differ: on a board with two cards
+**				they were found the other way round after a reboot, the root file system
+**				went from 179:33 to 179:1, and the weekly job of ACS-CGW was refused as
+**				SCRIPTCHG with not a byte of its script changed. The controller and the
+**				child decide by the one routine S_BATCHD$PIN_SAME, and the controller says
+**				BATCH$_SCRIPTDEV when it lets the device go.
 **--
 */
 
@@ -263,6 +271,8 @@
 #include	<grp.h>
 #include	<sys/socket.h>
 #include	<sys/stat.h>
+#include	<sys/statfs.h>
+#include	<sys/sysmacros.h>
 #include	<sys/types.h>
 #include	<sys/un.h>
 #include	<sys/wait.h>
@@ -286,8 +296,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO02"
+#define	__REV__		"02.02.02"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/
@@ -1355,6 +1365,97 @@ size_t		l_len;
 /*
 **++
 **  FUNCTIONAL DESCRIPTION:
+**	Takes the identifier of the file system a file is on, from statfs(2) or fstatfs(2).
+**
+**	On ext4, xfs and btrfs it is made from the UUID of the file system and so stays what it was
+**	when the device under it is numbered otherwise at the next boot; on a file system that makes
+**	it from the device number it changes together with the device, and so says nothing more.
+**
+**  INPUT PARAMETERS:
+**	a_fd	- descriptor of the file, or -1 to name it by a_path.
+**	a_path	- path of the file, used when a_fd is -1.
+**
+**  OUTPUT PARAMETERS:
+**	a_fsid	- receives the identifier; zero when it cannot be had or the file system has none.
+**
+**  RETURNS:
+**	BATCH$_NORMAL.
+**--
+*/
+static	int	s_batchd$fsid (
+			int		a_fd,
+			const char *	a_path,
+			long long *	a_fsid
+			)
+{
+struct statfs	l_sfs;
+int		l_rc;
+
+	*a_fsid	= 0;
+
+	l_rc	= (a_fd < 0) ? statfs(a_path, &l_sfs) : fstatfs(a_fd, &l_sfs);
+
+	if ( l_rc == 0 )
+		{
+		unsigned int	l_w [2];
+
+		memcpy(l_w, &l_sfs.f_fsid, sizeof(l_w));
+
+		*a_fsid	= (long long) (((unsigned long long) l_w[0] << 32) | l_w[1]);
+		}
+
+	return	BATCH$_NORMAL;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Says whether the file a job is about to run is the script that was submitted. The controller
+**	asks it before the fork and the child again, under the identity of the job, on the descriptor
+**	it opened - one rule in both places, so that what the one lets through the other does not stop
+**	with nothing to say but exit=126.
+**
+**	The inode, the size and the time of change to the nanosecond must be what they were. The
+**	device number is let go only when the file system is the same one: device numbers are handed
+**	out at boot in the order the devices are found, and two cards found the other way round give
+**	the same file system another number (179:33 at submission, 179:1 after the next boot). A job
+**	submitted before JRN$K_FSID was journalled has no identifier, and its device must match.
+**
+**  INPUT PARAMETERS:
+**	a_job	- the job descriptor carrying the pin taken at submission.
+**	a_st	- what stat(2) or fstat(2) says of the file now.
+**	a_fsid	- identifier of its file system now, from s_batchd$fsid.
+**
+**  RETURNS:
+**	BATCH$_NORMAL	- the same file, device and all.
+**	BATCH$_SCRIPTDEV - the same file on the same file system under another device number.
+**	BATCH$_SCRIPTCHG - another file.
+**--
+*/
+static	int	s_batchd$pin_same (
+			const BATCH$JOB *	a_job,
+			const struct stat *	a_st,
+			long long		a_fsid
+			)
+{
+	if ( (!S_ISREG(a_st->st_mode))
+		|| ((long long) a_st->st_ino != a_job->jb_ino)
+		|| ((long long) a_st->st_size != a_job->jb_size)
+		|| (((long long) a_st->st_mtim.tv_sec * 1000000000LL + (long long) a_st->st_mtim.tv_nsec) != a_job->jb_mtime) )
+		return	BATCH$_SCRIPTCHG;
+
+	if ( (long long) a_st->st_dev == a_job->jb_dev )
+		return	BATCH$_NORMAL;
+
+	if ( (a_job->jb_fsid) && (a_fsid == a_job->jb_fsid) )
+		return	BATCH$_SCRIPTDEV;
+
+	return	BATCH$_SCRIPTCHG;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
 **	Creates the process that executes a job. In the created process the following are performed in
 **	order: creation of a new session, restoration of the default signal disposition, assumption of
 **	the submitter's identity, change of the working directory, opening of the job log with
@@ -1387,7 +1488,8 @@ char *		l_argv [BATCH$K_NPARM + 3];
 char		l_env [64];
 pid_t		l_pid;
 struct stat	l_st;
-int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1;
+long long	l_fsid = 0;
+int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1, l_sts;
 
 	/*
 	**  The processor this job is to have, taken from the pool in turn. It is chosen here, in the
@@ -1399,18 +1501,21 @@ int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1;
 	/*
 	**  The script is identified again before anything is created. It was pinned at submission by
 	**  device, inode, size and time of change, and the path may since have been made to name
-	**  another file altogether - which is the whole of what a path guarantees.
+	**  another file altogether - which is the whole of what a path guarantees. The device alone may
+	**  differ when the file system is the same one (s_batchd$pin_same).
 	**
 	**  The refusal is issued here, in the controller, rather than left to the child: a child can
 	**  only exit, and an exit says exit=126 and no more. The entry is retained with the reason
 	**  named, which is what whoever submitted the job needs to read.
 	*/
-	if ( (0 > stat(l_job->jb_script, &l_st)) || (!S_ISREG(l_st.st_mode))
-		|| ((long long) l_st.st_dev != l_job->jb_dev)
-		|| ((long long) l_st.st_ino != l_job->jb_ino)
-		|| ((long long) l_st.st_size != l_job->jb_size)
-		|| (((long long) l_st.st_mtim.tv_sec * 1000000000LL
-			+ (long long) l_st.st_mtim.tv_nsec) != l_job->jb_mtime) )
+	if ( 0 > stat(l_job->jb_script, &l_st) )
+		l_sts	= BATCH$_SCRIPTCHG;
+	else	{
+		s_batchd$fsid(-1, l_job->jb_script, &l_fsid);
+		l_sts	= s_batchd$pin_same(l_job, &l_st, l_fsid);
+		}
+
+	if ( $IS_FAILURE(l_sts) )
 		{
 		l_job->jb_state	= JOB$K_RETAINED;
 		l_job->jb_exit	= -1;
@@ -1418,6 +1523,12 @@ int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1;
 
 		return	$PUTMSG_FAO(BATCH$_SCRIPTCHG, l_job->jb_entry, l_job->jb_script);
 		}
+
+	/* Said once at the start and run all the same: whoever wonders at the new number can read why */
+	if ( l_sts == BATCH$_SCRIPTDEV )
+		$PUTMSG_FAO(BATCH$_SCRIPTDEV, l_job->jb_entry, l_job->jb_script,
+				(unsigned) major(l_st.st_dev), (unsigned) minor(l_st.st_dev),
+				(unsigned) major((dev_t) l_job->jb_dev), (unsigned) minor((dev_t) l_job->jb_dev));
 
 	if ( (!l_job->jb_cpus[0]) && (g_lcorecnt) )
 		{
@@ -1566,10 +1677,9 @@ int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1;
 		if ( 0 > fstat(l_fd, &l_st) )
 			_exit(BATCHD$K_EXECFAIL);
 
-		if ( ((long long) l_st.st_dev != l_job->jb_dev) || ((long long) l_st.st_ino != l_job->jb_ino)
-			|| ((long long) l_st.st_size != l_job->jb_size)
-			|| (((long long) l_st.st_mtim.tv_sec * 1000000000LL
-				+ (long long) l_st.st_mtim.tv_nsec) != l_job->jb_mtime) )
+		s_batchd$fsid(l_fd, l_job->jb_script, &l_fsid);
+
+		if ( $IS_FAILURE(s_batchd$pin_same(l_job, &l_st, l_fsid)) )
 			_exit(BATCHD$K_EXECFAIL);
 
 		close(l_fd);
@@ -2043,6 +2153,12 @@ int		l_rc, l_ncpu;
 	*/
 	l_job->jb_mtime		= (long long) l_st.st_mtim.tv_sec * 1000000000LL + (long long) l_st.st_mtim.tv_nsec;
 	l_job->jb_size		= (long long) l_st.st_size;
+	/*
+	**  And the file system it is on, which outlives the device number: that is handed out anew at
+	**  every boot and need not come out the same. Zero where there is none to be had, and then the
+	**  device must match after all.
+	*/
+	s_batchd$fsid(-1, l_job->jb_script, &l_job->jb_fsid);
 
 	l_job->jb_uid		= a_uid;
 	l_job->jb_gid		= a_gid;

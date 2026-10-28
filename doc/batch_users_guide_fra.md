@@ -653,7 +653,14 @@ donnée en français.
 **BATCH-E-SCRIPTCHG**, entry *n*: script *fichier* was replaced since it was submitted
 
 > Le fichier n'est plus celui qui a été soumis. Le script est épinglé à la soumission par
-> périphérique, inœud, taille et date ; un fichier remplacé depuis n'est pas exécuté.
+> périphérique, inœud, taille, date et système de fichiers ; un fichier remplacé depuis n'est pas
+> exécuté.
+
+**BATCH-I-SCRIPTDEV**, entry *n*: script *fichier* is on the same file system under device *maj:min*, was *maj:min*
+
+> Le disque a reçu un autre numéro de périphérique au démarrage (deux cartes trouvées dans l'autre
+> ordre, un disque USB branché ailleurs). Le fichier et son système de fichiers sont les mêmes : le
+> travail est exécuté.
 
 **BATCH-E-JOBFAIL**, job *n* (*nom*) terminated with status *s*, log *fichier*
 

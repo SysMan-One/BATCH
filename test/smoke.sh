@@ -1,8 +1,8 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-02-02ECO01
-#  REV:			02.02.01
+#  IDENT:		X-02-02ECO02
+#  REV:			02.02.02
 #
 #  FACILITY:		BATCH
 #
@@ -108,6 +108,11 @@
 #					failed and every check after it with it. Anybody else is now shown that
 #					the pause is refused, as BATCH$_NOPRIVQUE, and the queue stays open; the
 #					Russian and French User's Guides are to speak of NOPRIVQUE.
+#
+#	28-OCT-2026	CLD	X-02-02ECO02 A script renumbered with its disk: the device is changed by hand in the
+#					journal while a controller of its own is down. With the file system
+#					pinned the job runs, as SCRIPTDEV; a record without one is SCRIPTCHG.
+#					The User's Guides are to speak of SCRIPTDEV.
 #--
 #
 
@@ -959,6 +964,91 @@ wait "${l_spid}" 2>/dev/null
 l_check $? "a script replaced after submission is refused when the job comes to be run"
 
 #
+#  The device number of a disk is handed out at boot and need not come out the same: a board with
+#  two cards found them the other way round, and a weekly job was refused as SCRIPTCHG with its
+#  script untouched. The file system is pinned beside the device, and where it is the same the
+#  device alone may differ - the job runs, and the controller says SCRIPTDEV. A record that has no
+#  file system (one written before JRN$K_FSID) still needs its device.
+#
+#  The renumbering is made by hand in the journal while the controller is down: tag 52 is the device
+#  (JRN$K_DEV), tag 56 the file system (JRN$K_FSID), both quadwords.
+#
+mkdir -p "${g_root}/devrun"
+printf '#!/bin/sh\ntouch "%s/devrun/ran.$1"\n' "${g_root}" > "${g_root}/scripts/devnum.sh"
+chmod 755 "${g_root}/scripts/devnum.sh"
+
+l_devrun_start () {
+	"${g_batchd}" /FOREGROUND "/ROOT=${g_root}/devrun" >>"${g_root}/devrun/log.txt" 2>&1 &
+	l_spid=$!
+
+	l_n=0
+	while [ "${l_n}" -lt 25 ] ; do
+		[ -S "${g_root}/devrun/batch.sock" ] && break
+		l_n=`expr ${l_n} + 1`
+		sleep 0.4
+	done
+}
+
+if [ "`stat -f -c %i "${g_root}/scripts"`" = "0" ] ; then
+	echo "%BATCH-I-SMOKE, ${g_root} has no file system identifier, the device renumbering is not checked"
+else
+	l_devrun_start
+
+	l_e1=`BATCH_ROOT="${g_root}/devrun" "${g_batch}" submit "${g_root}/scripts/devnum.sh" /NAME=renumbered \
+		'/PARAMETERS=(same)' /HOLD 2>&1 | sed -n 's/.*as entry \([0-9][0-9]*\).*/\1/p'`
+	l_e2=`BATCH_ROOT="${g_root}/devrun" "${g_batch}" submit "${g_root}/scripts/devnum.sh" /NAME=oldrecord \
+		'/PARAMETERS=(old)' /HOLD 2>&1 | sed -n 's/.*as entry \([0-9][0-9]*\).*/\1/p'`
+
+	kill "${l_spid}" 2>/dev/null
+	wait "${l_spid}" 2>/dev/null
+
+	python3 - "${g_root}/devrun/journal.dat" <<'EOF_PY' 2>/dev/null
+import sys
+
+p = sys.argv[1]
+d = bytearray(open(p, 'rb').read())
+
+def quad (rec, tag):
+	k = bytes([0x50, tag, 0x00, 0x08])
+	i = d.find(k, rec)
+	return i + 4
+
+#  Both records get another device; the second loses its file system as well
+for l_n, l_rec in enumerate((d.find(b'renumbered'), d.find(b'oldrecord'))):
+	l_s = d.rfind(bytes([0x50, 0x30, 0x00, 0x08]), 0, l_rec)	#  JRN$K_QTIME opens the quadwords of the record
+	l_i = quad(l_s, 0x34)
+	d[l_i + 7] ^= 0x01
+	if l_n == 1:
+		l_i = quad(l_s, 0x38)
+		d[l_i : l_i + 8] = bytes(8)
+
+open(p, 'wb').write(bytes(d))
+EOF_PY
+
+	l_devrun_start
+
+	BATCH_ROOT="${g_root}/devrun" "${g_batch}" release "${l_e1},${l_e2}" >/dev/null 2>&1
+
+	l_n=0
+	while [ "${l_n}" -lt 25 ] ; do
+		[ -f "${g_root}/devrun/ran.same" ] \
+			&& BATCH_ROOT="${g_root}/devrun" "${g_batch}" show /all 2>/dev/null | grep "oldrecord" | grep -q "exit=-1" \
+			&& break
+		l_n=`expr ${l_n} + 1`
+		sleep 0.4
+	done
+
+	kill "${l_spid}" 2>/dev/null
+	wait "${l_spid}" 2>/dev/null
+
+	[ -f "${g_root}/devrun/ran.same" ] && grep -q "SCRIPTDEV, entry ${l_e1}:" "${g_root}/devrun/log.txt"
+	l_check $? "a script found under another device number on its own file system is run, as SCRIPTDEV"
+
+	[ ! -f "${g_root}/devrun/ran.old" ] && grep -q "SCRIPTCHG, entry ${l_e2}:" "${g_root}/devrun/log.txt"
+	l_check $? "a record without a file system still needs its device: SCRIPTCHG"
+fi
+
+#
 #  The name of a job becomes part of the specification of its log, and that log is the one file the
 #  controller opens while it still holds its privileges. A name carrying a path separator or a
 #  parent reference would lead that open out of the log directory.
@@ -1294,7 +1384,7 @@ for l_lang in rus fra ; do
 	l_missing=""
 
 	for l_name in SUBMIT SHOW DELETE RELEASE PURGE SYNC QUEUE ANALYZE "SET ENTRY" \
-			PURGED NOTCONF NOSUCHQUE SCRIPTCHG QUEORPHAN SYNCFAIL SYNCTMO \
+			PURGED NOTCONF NOSUCHQUE SCRIPTCHG SCRIPTDEV QUEORPHAN SYNCFAIL SYNCTMO \
 			ENTMODIFIED NOTMODIFIABLE NOTHINGSET NOPRIVQUE ; do
 		grep -q "${l_name}" "${g_srcdir}/doc/batch_users_guide_${l_lang}.md" \
 			|| l_missing="${l_missing} ${l_name}"

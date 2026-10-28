@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHMSG.C
-**  IDENT:		X-02-02ECO01
-**  REV:		02.02.01
+**  IDENT:		X-02-02ECO02
+**  REV:		02.02.02
 **
 **  FACILITY:		BATCH
 **
@@ -74,6 +74,8 @@
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **
 **	25-OCT-2026	RRL	X-02-02ECO01	Text of BATCH$_NOPRIVQUE (BATCHMSG.H X-02-02ECO01).
+**
+**	28-OCT-2026	CLD	X-02-02ECO02	Text of BATCH$_SCRIPTDEV (BATCHMSG.H X-02-02ECO02).
 **--
 */
 
@@ -86,8 +88,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO02"
+#define	__REV__		"02.02.02"
 
 /*
 **  A single row of the message table. The text is held in an ASCIC container, so its length is
@@ -142,6 +144,7 @@ static	EMSG_RECORD	s_msgtab [] =
 	$MSGREC(BATCH$_LOGSPEC,		"LOGSPEC, the job log specification cannot be constructed"			),
 	$MSGREC(BATCH$_NODIR,		"NODIR, directory !AZ is not accessible, realpath()->NULL, errno: !SL (!AZ)"	),
 	$MSGREC(BATCH$_SCRIPTCHG,	"SCRIPTCHG, entry !UL: script !AZ was replaced since it was submitted"		),
+	$MSGREC(BATCH$_SCRIPTDEV,	"SCRIPTDEV, entry !UL: script !AZ is on the same file system under device !UL:!UL, was !UL:!UL"	),
 	$MSGREC(BATCH$_LOGSWEPT,	"LOGSWEPT, !SL job log!AZ removed from !AZ, older than !SL day!AZ"			),
 	$MSGREC(BATCH$_NOCONNECT,	"NOCONNECT, job controller is not available, connect(!AZ)->!SL, errno: !SL (!AZ)"	),
 	$MSGREC(BATCH$_SOCKERR,		"SOCKERR, socket(AF_UNIX)->!SL, errno: !SL (!AZ)"				),

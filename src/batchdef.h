@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHDEF.H
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 **			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -68,6 +68,8 @@
 **				is issued, and an FAO control string as the text of a message.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	28-OCT-2026	CLD	X-02-02ECO01	JB_FSID: the file system of the script, pinned beside its device.
 **--
 */
 
@@ -79,8 +81,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHDEF"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO01"
+#define	__REV__		"02.02.01"
 
 #include	<sys/types.h>
 #include	<stdarg.h>
@@ -173,6 +175,7 @@ typedef struct batch_job_t {
 	long long	jb_ino;					/* Inode of the script when submitted			*/
 	long long	jb_size;				/* Its size then					*/
 	long long	jb_mtime;				/* Time it was last modified then			*/
+	long long	jb_fsid;				/* Identifier of its file system then, zero if none	*/
 
 	long long	jb_qtime;				/* Time the job was queued 					*/
 	long long	jb_after;				/* Do not start before this time, zero means at once 		*/

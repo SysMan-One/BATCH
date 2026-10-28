@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		UTIL.C
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -73,6 +73,8 @@
 **				the confirmation of the utility and the log of the controller alike.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	28-OCT-2026	CLD	X-02-02ECO01	JRN$K_FSID written and read with the rest of the pin of the script.
 **--
 */
 
@@ -98,8 +100,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"UTIL"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO01"
+#define	__REV__		"02.02.01"
 
 #define	UTIL$K_SECDAY	86400	/* Seconds in a day */
 #define	UTIL$K_OUTSZ	1024	/* Working buffer of UTIL$PUT */
@@ -954,6 +956,7 @@ int		l_i, l_sts;
 	$PUT_Q(JRN$K_INO,	a_job->jb_ino);
 	$PUT_Q(JRN$K_MTIME,	a_job->jb_mtime);
 	$PUT_Q(JRN$K_SIZE,	a_job->jb_size);
+	$PUT_Q(JRN$K_FSID,	a_job->jb_fsid);
 
 	$PUT_S(JRN$K_QUEUE,	a_job->jb_queue);
 	$PUT_S(JRN$K_NAME,	a_job->jb_name);
@@ -1058,6 +1061,7 @@ int		l_i, l_ctx;
 	$GET_Q(JRN$K_INO,	a_job->jb_ino);
 	$GET_Q(JRN$K_MTIME,	a_job->jb_mtime);
 	$GET_Q(JRN$K_SIZE,	a_job->jb_size);
+	$GET_Q(JRN$K_FSID,	a_job->jb_fsid);
 
 	$GET_S(JRN$K_QUEUE,	a_job->jb_queue);
 	$GET_S(JRN$K_NAME,	a_job->jb_name);

@@ -1473,7 +1473,13 @@ string, `!UL` or `!SL` for a number, `!8XL` for a hexadecimal value - marks wher
 
     entry !UL: script !AZ was replaced since it was submitted
 
-    *User action:* The script is not the file that was submitted. It is pinned at submission by device, inode, size and time of change; a file replaced since is not executed. Submit the job again.
+    *User action:* The script is not the file that was submitted. It is pinned at submission by device, inode, size and time of change, and by its file system; a file replaced since is not executed. Submit the job again.
+
+**SCRIPTDEV**, informational
+
+    entry !UL: script !AZ is on the same file system under device !UL:!UL, was !UL:!UL
+
+    *User action:* None. The disk got another device number at boot (two cards found the other way round, a USB disk plugged in elsewhere). The file and its file system are the same, so the job runs.
 
 **SYNCFAIL**, error
 
