@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCH.C
-**  IDENT:		X-02-02
-**  REV:		02.02.00
+**  IDENT:		X-02-02ECO01
+**  REV:		02.02.01
 **
 **  FACILITY:		BATCH
 **
@@ -206,6 +206,8 @@
 **				library was still lying in the place it is looked for first.
 **
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
+**
+**	 3-NOV-2026	RRL	X-02-02ECO01	S_BATCH$UNKNOWN_TAGS: the unused L_PDU is gone (-Wunused-variable).
 **--
 */
 
@@ -245,8 +247,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCH"
-#define	__IDENT__	"X-02-02"
-#define	__REV__		"02.02.00"
+#define	__IDENT__	"X-02-02ECO01"
+#define	__REV__		"02.02.01"
 
 #define	BATCH$K_MINABBR	2				/* Shortest admissible abbreviation of a qualifier 			*/
 
@@ -1497,7 +1499,6 @@ static	int	s_batch$unknown_tags (
 			unsigned int	a_entry
 			)
 {
-const AVPROTO_PDU *	l_pdu = (const AVPROTO_PDU *) a_rec;
 const AVPROTO_TLV *	l_tlv;
 const unsigned char *	l_p, *l_end;
 char			l_hex [3 * 16 + 1];

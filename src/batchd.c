@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-02-02ECO02
-**  REV:		02.02.02
+**  IDENT:		X-02-02ECO03
+**  REV:		02.02.03
 **
 **  FACILITY:		BATCH
 **
@@ -256,6 +256,8 @@
 **				SCRIPTCHG with not a byte of its script changed. The controller and the
 **				child decide by the one routine S_BATCHD$PIN_SAME, and the controller says
 **				BATCH$_SCRIPTDEV when it lets the device go.
+**
+**	 3-NOV-2026	RRL	X-02-02ECO03	S_BATCHD$SCHEDULE: the unused L_BEST is gone (-Wunused-variable).
 **--
 */
 
@@ -296,8 +298,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-02-02ECO02"
-#define	__REV__		"02.02.02"
+#define	__IDENT__	"X-02-02ECO03"
+#define	__REV__		"02.02.03"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/
@@ -1785,7 +1787,7 @@ static	int	s_batchd$schedule (
 			int *	a_changed
 			)
 {
-BATCHD$JOBENT *	l_ent, *l_best;
+BATCHD$JOBENT *	l_ent;
 long long	l_now;
 int		l_free, l_busy;
 
