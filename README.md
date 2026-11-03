@@ -73,6 +73,14 @@ sudo cmake --install build
 sudo systemctl restart batchd                 # after an upgrade; without systemd: service batchd restart
 ```
 
+`ctest` runs the functional test `smoke.sh`. As the privileged user it also checks `/USER`: the
+`batch` image is started once as `nobody`, so every directory on the way to the build tree must be
+searchable by others (`chmod o+x`). A build directory made by `mktemp -d` (mode 0700), or one under
+a private home, fails these two checks - `/USER runs a job as another user ...` and `the log records
+who asked ...` - and the checks after them are then reported as failed too, because the failure is
+carried forward. Build in a directory of mode 0755, e.g. under `/tmp`, or run `ctest` unprivileged,
+where `/USER` is not exercised.
+
 The installation puts `batch` in `bin`, `batchd` in `sbin`, this file and the guide in
 `share/doc/BATCH`, the systemd unit in `/lib/systemd/system` — or, on a system without systemd, the
 System V start script in `/etc/init.d` — and the subsystem root in `/var/spool/batch`.
