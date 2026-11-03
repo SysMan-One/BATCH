@@ -76,6 +76,10 @@
 **	25-OCT-2026	RRL	X-02-02ECO01	Text of BATCH$_NOPRIVQUE (BATCHMSG.H X-02-02ECO01).
 **
 **	28-OCT-2026	CLD	X-02-02ECO02	Text of BATCH$_SCRIPTDEV (BATCHMSG.H X-02-02ECO02).
+**
+**	 3-NOV-2026	RRL	X-02-02ECO03	$MSGREC names the MNEMONIC field of EMSG_RECORD, which UTILITY$ROUTINES
+**				has gained, and leaves it NULL: the 100 records of the table drew a
+**				-Wmissing-field-initializers remark each. No change in what a message says.
 **--
 */
 
@@ -88,20 +92,22 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHMSG"
-#define	__IDENT__	"X-02-02ECO02"
-#define	__REV__		"02.02.02"
+#define	__IDENT__	"X-02-02ECO03"
+#define	__REV__		"02.02.03"
 
 /*
 **  A single row of the message table. The text is held in an ASCIC container, so its length is
 **  taken from the literal at translation time.
 */
 /*
-**  The trailing FACNAME is initialised to NULL and left so: UTILITY$ROUTINES V.01-28 stamps it into
-**  every record at registration, from the name in the descriptor, and a record answers for its own
-**  envelope thereafter. It is written here all the same - an initialiser that names every field of
-**  a structure says it means to, and the compiler is spared a remark about the one it does not.
+**  The trailing FACNAME and MNEMONIC are initialised to NULL and left so: UTILITY$ROUTINES V.01-28
+**  stamps FACNAME into every record at registration, from the name in the descriptor, and a record
+**  answers for its own envelope thereafter; a NULL MNEMONIC leaves the envelope as it was - the text
+**  of every message here begins with its own mnemonic. Both are written here all the same - an
+**  initialiser that names every field of a structure says it means to, and the compiler is spared
+**  a remark about the one it does not.
 */
-#define	$MSGREC(cond, txt)	{ (int) (cond), { (unsigned char) (sizeof(txt) - 1), txt }, NULL }
+#define	$MSGREC(cond, txt)	{ (int) (cond), { (unsigned char) (sizeof(txt) - 1), txt }, NULL, NULL }
 
 static	EMSG_RECORD	s_msgtab [] =
 	{
