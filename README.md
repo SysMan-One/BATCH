@@ -163,6 +163,27 @@ cmake -S . -B build -DBATCH\$K_SPOOLROOT=/opt/batch -DBATCH\$M_STRICT=ON
 The backslash is needed only to keep the shell from expanding the dollar sign; CMake itself
 permits a dollar sign in a variable name.
 
+## Making a release
+
+The kits - `.deb`, `.rpm` and `.tar.gz` for x86_64, armhf, arm64, mips, mipsel and mips64el - are built and tested on GitHub Actions (`.github/workflows/release.yml`, workflow *Kits*), not by hand. The images are linked statically, so one image of a processor runs on every Linux of that processor; they are installed in `/usr/local` like `cmake --install` does (`/usr/bin/batch` is the command of the package `at` on Debian and Ubuntu), the queue is in `/var/spool/batch`. A package enables and starts the job controller, an upgrade restarts it, removing it keeps the queue and `dpkg --purge` deletes it. There are no OpenWrt packages: `/var` is a tmpfs there, and the queue would not survive a reboot.
+
+Static glibc has one catch: the user names (`/USER`, the owner shown by `SHOW /FULL`, the groups of a job) are looked up by the NSS libraries of the host, so a glibc host is needed (every Debian, Ubuntu, RHEL, Fedora; not Alpine). The workflow checks it on Debian 12/13 and Ubuntu 24.04 before it publishes anything. Known defect of the static image: `/USER=<a name the files do not have>` makes glibc load `libnss_systemd` into a static process and `batchd` dies with SIGSEGV (seen on Debian 12); the check in `packaging/test/deb.sh` fails until the names are looked up without NSS or the images are linked dynamically.
+
+```sh
+git tag X-02-02ECO03 && git push origin X-02-02ECO03    # the tag is BATCH_K_IDENT
+```
+
+* a push to `master` (or *Run workflow*) builds the kits and keeps them as workflow artifacts;
+* a push of a tag `X-nn-nn[ECOnn]` also installs the `.deb` on Debian and Ubuntu, starts the images of every processor under qemu-user, runs a job through them, and only then publishes a GitHub Release with all the kits, the source kit and `SHA256SUMS`. The tag must be `BATCH_K_IDENT` of `CMakeLists.txt` and the `__IDENT__` of `src/batchd.c` - the release job refuses one that is not.
+
+`packaging/build.sh` builds the kits of ONE processor and is what the workflow runs:
+
+```sh
+CROSS_PREFIX=<tool chain>/bin/mipsel-buildroot-linux-gnu- VHELP_SRC=<vHELP checkout> packaging/build.sh mipsel dist
+```
+
+It builds StarLet (the kit `packaging/third_party/starlet-1.7.1.tar.gz`, checked against its `.sha256`) and HELP for the build host and for the target first, then BATCH. `packaging/test/deb.sh` and `packaging/test/kits.sh` are the tests of the workflow. The package version (`aa.bb.cc`) is made of `BATCH_K_IDENT` (`X-aa-bbECOcc`).
+
 ## Quick start
 
 ```sh

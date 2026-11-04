@@ -1,0 +1,54 @@
+BATCH - installing the TGZ kit by hand
+======================================
+
+The kit is a tree to be unpacked over "/". The images are statically
+linked: they run on any Linux of their processor. The user names (/USER,
+the owner in SHOW /FULL) are looked up by the C library of the HOST, so
+the host must be a glibc system with its NSS libraries (every Debian,
+Ubuntu, RHEL, Fedora); on a musl system (Alpine, OpenWrt) the lookups
+fail and /USER is refused.
+
+    tar -xzf BATCH-<ident>-<arch>.tar.gz -C /
+
+What lands where:
+
+    /usr/local/bin/batch                           the utility
+    /usr/local/sbin/batchd                         the job controller
+    /usr/local/share/help/                         help libraries (batch help ...),
+                                                   ru/ and fr/ for the locale
+    /usr/local/share/doc/BATCH/                    the manuals and README.md
+    /usr/lib/systemd/system/batchd.service         systemd unit
+    /usr/local/share/batch/service/batchd.sysv     System V start script
+    /var/spool/batch/                              the queue, its journal, the logs
+
+systemd:
+    systemctl daemon-reload; systemctl enable --now batchd
+    journalctl -u batchd -f
+
+System V:
+    cp /usr/local/share/batch/service/batchd.sysv /etc/init.d/batchd
+    update-rc.d batchd defaults     (or: chkconfig --add batchd)
+    service batchd start
+
+Then:
+    batch submit /path/to/script.sh /NAME=test
+    batch show
+
+To remove: stop and disable the service, delete the files above; the queue
+in /var/spool/batch is yours - keep it or delete it.
+
+
+BATCH - установка комплекта TGZ вручную
+=======================================
+
+Комплект - это дерево, которое распаковывают поверх "/". Программы собраны
+статически и работают на любом Linux своего процессора. Имена пользователей
+(/USER, владелец в SHOW /FULL) ищет библиотека C ХОСТА, поэтому хост должен
+быть glibc-системой с её NSS (любой Debian, Ubuntu, RHEL, Fedora); на musl
+(Alpine, OpenWrt) поиск не работает и /USER отвергается.
+
+    tar -xzf BATCH-<ident>-<arch>.tar.gz -C /
+
+Что куда ложится - см. таблицу выше. Запуск службы - команды для systemd или
+System V из английской части. Очередь в /var/spool/batch принадлежит
+оператору: при удалении комплекта её оставляют или удаляют сами.

@@ -1,0 +1,33 @@
+#!/bin/sh
+#++
+#	FACILITY: BATCH - the kits
+#
+#	DESCRIPTION: postrm (DEB) and %postun (RPM) of @NAME@.  The queue, its
+#		journal and the logs of the jobs (@SPOOL@) are the operator's and
+#		stay on a removal, as after "cmake --build ... --target uninstall";
+#		"dpkg --purge" removes them too.
+#
+#	AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#	CREATION DATE: 04-NOV-2026
+#
+#	MODIFICATION HISTORY:
+#
+#		04-NOV-2026	RRL	X-02-02ECO03 : Initial revision.
+#--
+
+[ -d /run/systemd/system ] && systemctl daemon-reload >/dev/null 2>&1
+
+#	The links of the System V script go once the script itself is gone (prerm).
+case "$1" in
+	remove|purge|0)
+		if [ ! -e /etc/init.d/batchd ] && command -v update-rc.d >/dev/null 2>&1
+		then
+			update-rc.d -f batchd remove >/dev/null 2>&1
+		fi
+		;;
+esac
+
+[ "$1" = "purge" ] && rm -rf @SPOOL@
+
+exit 0

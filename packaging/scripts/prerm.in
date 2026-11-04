@@ -1,0 +1,37 @@
+#!/bin/sh
+#++
+#	FACILITY: BATCH - the kits
+#
+#	DESCRIPTION: prerm (DEB) and %preun (RPM) of @NAME@: stops the job
+#		controller, disables it and takes the System V script copied into
+#		/etc/init.d (if it is still ours) when the package goes away - not
+#		on an upgrade, where postinst restarts it.  The jobs outlive the
+#		controller, and the queue stays in @SPOOL@.
+#
+#	AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#	CREATION DATE: 04-NOV-2026
+#
+#	MODIFICATION HISTORY:
+#
+#		04-NOV-2026	RRL	X-02-02ECO03 : Initial revision.
+#--
+
+#	DEB: "remove"; RPM: 0 when the last copy goes.
+case "$1" in
+	remove|0)	;;
+	*)		exit 0 ;;
+esac
+
+if [ -d /run/systemd/system ]
+then
+	systemctl stop batchd.service >/dev/null 2>&1 || true
+	systemctl disable batchd.service >/dev/null 2>&1 || true
+elif [ -x /etc/init.d/batchd ]
+then
+	/etc/init.d/batchd stop >/dev/null 2>&1 || true
+
+	cmp -s /etc/init.d/batchd @SERVICEDIR@/batchd.sysv && rm -f /etc/init.d/batchd
+fi
+
+exit 0

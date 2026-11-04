@@ -1,0 +1,60 @@
+#!/bin/sh
+#++
+#	FACILITY: BATCH - the kits
+#
+#	DESCRIPTION: postinst (DEB) and %post (RPM) of @NAME@.  Does what the
+#		install script of CMakeLists.txt does for "cmake --install" and
+#		skips under DESTDIR: rebuilds the HELP catalogue, enables the job
+#		controller and starts it - an upgrade restarts it (the jobs run in
+#		sessions of their own and outlive it; the queue is re-read from the
+#		journal).
+#
+#		With systemd the unit is used; without it, where update-rc.d is, the
+#		System V script is copied into /etc/init.d.  Neither: the message
+#		says how to start it by hand.
+#
+#	AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#	CREATION DATE: 04-NOV-2026
+#
+#	MODIFICATION HISTORY:
+#
+#		04-NOV-2026	RRL	X-02-02ECO03 : Initial revision.
+#--
+
+SYSV=@SERVICEDIR@/batchd.sysv
+
+#	DEB: "configure"; RPM: 1 on install, 2 on upgrade.  Anything else - leave.
+case "$1" in
+	configure|1|2)	;;
+	*)		exit 0 ;;
+esac
+
+#	The catalogue the HELP utility shares between its users: "help submit"
+#	finds the topic.  A convenience: BATCH HELP reads the library itself.
+for vhelp in @PREFIX@/bin/vhelp /usr/bin/vhelp
+do
+	[ -x "$vhelp" ] && { "$vhelp" /SYSCACHE >/dev/null 2>&1 || true; break; }
+done
+
+if [ -d /run/systemd/system ]
+then
+	systemctl daemon-reload >/dev/null 2>&1 || true
+	systemctl enable batchd.service >/dev/null 2>&1 || true
+
+	if systemctl is-active --quiet batchd.service
+	then	systemctl restart batchd.service || echo "@NAME@: the controller was not restarted, run: systemctl restart batchd"
+	else	systemctl start batchd.service || echo "@NAME@: the controller was not started, run: systemctl start batchd"
+	fi
+elif command -v update-rc.d >/dev/null 2>&1 && [ -x "$SYSV" ]
+then
+	cp -f "$SYSV" /etc/init.d/batchd
+	chmod 755 /etc/init.d/batchd
+	update-rc.d batchd defaults >/dev/null 2>&1 || true
+	/etc/init.d/batchd restart || echo "@NAME@: the controller was not started, run: service batchd start"
+else
+	echo "@NAME@: no systemd and no update-rc.d here - $SYSV is the System V script;"
+	echo "@NAME@: start the controller by hand: @PREFIX@/sbin/batchd /ROOT=@SPOOL@"
+fi
+
+exit 0

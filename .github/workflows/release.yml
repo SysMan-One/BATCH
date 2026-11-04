@@ -1,0 +1,240 @@
+#++
+#	FACILITY: BATCH - kits for ARM, MIPS and x86
+#
+#	AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#	CREATION DATE: 04-NOV-2026
+#
+#	DESCRIPTION:
+#		Builds the kits (.deb, .rpm, .tar.gz) of BATCH for every processor
+#		with PACKAGING/BUILD.SH, on glibc tool chains of Bootlin.  The
+#		images are linked statically.  The name lookups (/USER, the owner
+#		in SHOW /FULL, the groups of a job) go through NSS of the host's
+#		glibc - TEST-DEB checks that on Debian 12/13 and Ubuntu 24.04
+#		before a release is published.
+#
+#		    push to master, workflow_dispatch	the kits as workflow artifacts
+#		    push of a tag X-nn-nn[ECOnn]	the same, plus a GitHub Release
+#						of that name with all the kits,
+#						the source kit and SHA256SUMS
+#
+#		To release:	git tag X-02-02ECO03 && git push origin X-02-02ECO03
+#
+#		The tag must be BATCH_K_IDENT of CMakeLists.txt and the __IDENT__ of
+#		the head module SRC/BATCHD.C - the release job refuses one that is
+#		not.
+#
+#		No OpenWrt kits (.ipk, .apk): the queue lives in /var/spool/batch,
+#		which is a tmpfs there.
+#
+#	MODIFICATION HISTORY:
+#
+#		04-NOV-2026	RRL	X-02-02ECO03 : Initial revision, after the workflow of
+#					BroTwins (X.01-10ECO14), without the OpenWrt kits.
+#
+#--
+
+name: Kits
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'X-*' ]
+  workflow_dispatch:
+
+env:
+  #	Bootlin tool chains, https://toolchains.bootlin.com
+  TOOLCHAIN_RELEASE: stable-2026.08-1
+  #	The HELP package: a pinned commit of https://github.com/SysMan-One/vHELP
+  VHELP_REF: 029fb368468c6594d81400f1713da4e06b0b4870
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64, toolchain: x86-64 }
+          - { target: armhf,  toolchain: armv7-eabihf }
+          - { target: arm64,  toolchain: aarch64 }
+          - { target: mips,   toolchain: mips32 }
+          - { target: mipsel, toolchain: mips32el }
+          #	Bootlin has no mips64el-n64 (only n32), Debian's mips64el is the n64 ABI
+          - { target: mips64el, toolchain: none, cross: mips64el-linux-gnuabi64-,
+              apt: "gcc-mips64el-linux-gnuabi64 libc6-dev-mips64el-cross" }
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/checkout@v5
+        with:
+          repository: SysMan-One/vHELP
+          ref: ${{ env.VHELP_REF }}
+          path: vhelp
+
+      - name: Tools of the build host
+        run: sudo apt-get update -q && sudo apt-get install -y -q cmake rpm python3
+
+      - name: Tool chain cache
+        id: tc-cache
+        if: matrix.toolchain != 'none'
+        uses: actions/cache@v4
+        with:
+          path: ~/toolchain
+          key: bootlin-${{ matrix.toolchain }}-glibc-${{ env.TOOLCHAIN_RELEASE }}
+
+      - name: Tool chain download
+        if: matrix.toolchain != 'none' && steps.tc-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/toolchain
+          curl -sSfL --retry 3 \
+            "https://toolchains.bootlin.com/downloads/releases/toolchains/${{ matrix.toolchain }}/tarballs/${{ matrix.toolchain }}--glibc--${TOOLCHAIN_RELEASE}.tar.xz" \
+            | tar -xJ -C ~/toolchain --strip-components=1
+          ~/toolchain/relocate-sdk.sh || true
+
+      #	Bootlin has no tool chain for this target, the distribution has one.
+      - name: Tool chain of the distribution
+        if: matrix.toolchain == 'none'
+        run: sudo apt-get install -y -q ${{ matrix.apt }}
+
+      - name: Build the kits
+        env:
+          DIST_CROSS: ${{ matrix.cross }}
+        run: |
+          if [ -n "${DIST_CROSS}" ]
+          then
+            CC=$(command -v "${DIST_CROSS}gcc")
+          else
+            CC=$(ls ~/toolchain/bin/*-buildroot-linux-gnu*-gcc | head -1)
+          fi
+          echo "Tool chain: ${CC}"
+          "${CC}" --version | head -1
+          CROSS_PREFIX="${CC%gcc}" VHELP_SRC="${GITHUB_WORKSPACE}/vhelp" \
+            bash packaging/build.sh ${{ matrix.target }} dist 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      #	The log of a job is not readable without signing in; an annotation is.
+      #	The tail of a failed build goes there, %0A is the line break of one.
+      - name: Tail of the failed build
+        if: failure()
+        run: |
+          tail -n 60 build.log | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > tail.txt
+          echo "::error title=${{ matrix.target }} build::$(cat tail.txt)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kits-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  #	BATCH_K_IDENT of CMakeLists.txt is what the controller prints in its
+  #	banner.  On a tag the release job checks that the tag is the same.
+
+  test-deb:
+    name: deb ${{ matrix.target }} ${{ matrix.distro }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ x86_64, arm64 ]
+        distro: [ 'debian:bookworm', 'debian:trixie', 'ubuntu:noble' ]
+        include:
+          - { target: x86_64, runner: ubuntu-24.04 }
+          - { target: arm64,  runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: kits-${{ matrix.target }}
+          path: kits
+
+      - name: Install, run a job, remove, purge
+        run: |
+          ident=$(sed -n 's/^set(BATCH_K_IDENT[[:space:]]*"\([^"]*\)".*/\1/p' CMakeLists.txt)
+          docker run --rm -v "${PWD}/kits:/kits:ro" -v "${PWD}/packaging/test:/test:ro" \
+            ${{ matrix.distro }} bash /test/deb.sh "${ident}" /kits
+
+  test-kits:
+    name: kits ${{ matrix.target }}
+    needs: build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ x86_64, armhf, arm64, mips, mipsel, mips64el ]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: kits-${{ matrix.target }}
+          path: kits
+
+      - name: qemu-user for the foreign processors
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q qemu-user-static binfmt-support rpm
+          ls /proc/sys/fs/binfmt_misc/ | grep qemu
+
+      - name: The kits of the processor, the controller is started and a job goes through
+        run: |
+          ident=$(sed -n 's/^set(BATCH_K_IDENT[[:space:]]*"\([^"]*\)".*/\1/p' CMakeLists.txt)
+          bash packaging/test/kits.sh "${ident}" kits ${{ matrix.target }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ build, test-deb, test-kits ]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: The tag is the ident of the product and of the head module
+        run: |
+          cmake_ident=$(sed -n 's/^set(BATCH_K_IDENT[[:space:]]*"\([^"]*\)".*/\1/p' CMakeLists.txt)
+          head_ident=$(sed -n 's/^#define[[:space:]]*__IDENT__[[:space:]]*"\(.*\)".*/\1/p' src/batchd.c)
+          for pair in "CMakeLists.txt:${cmake_ident}" "src/batchd.c:${head_ident}"
+          do
+            if [ "${pair#*:}" != "${GITHUB_REF_NAME}" ]
+            then
+              echo "::error::${pair%%:*} carries ${pair#*:}, the tag is ${GITHUB_REF_NAME}"
+              exit 1
+            fi
+          done
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: kits-*
+          path: dist
+          merge-multiple: true
+
+      - name: Source kit and checksums
+        run: |
+          git archive --format=tar.gz --prefix="BATCH-${GITHUB_REF_NAME}/" \
+            -o "dist/BATCH-${GITHUB_REF_NAME}-src.tar.gz" HEAD
+          cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: BATCH ${{ github.ref_name }}
+          files: dist/*
+          body: |
+            BATCH ${{ github.ref_name }} - the batch execution subsystem for shell scripts (`batch` and the job controller `batchd`), statically linked for x86_64, armhf, arm64, mips, mipsel and mips64el.
+
+            | Kit | Where | Install |
+            |-----|-------|---------|
+            | `batch_<rev>-1_<arch>.deb` | Debian, Ubuntu, Raspberry Pi OS | `apt install ./batch_*.deb` |
+            | `batch-<rev>-1.<arch>.rpm` | RHEL, Fedora, ALT, openSUSE | `dnf install ./batch-*.rpm` |
+            | `BATCH-<ident>-<arch>.tar.gz` | any Linux, by hand | `tar -xzf ... -C /`, see `/usr/local/share/doc/BATCH/INSTALL.txt` |
+            | `BATCH-<ident>-src.tar.gz` | the source | `cmake -S . -B build`, see README.md (needs StarLet and HELP) |
+
+            The images are installed in `/usr/local` (`/usr/local/bin/batch`, `/usr/local/sbin/batchd`), the queue in `/var/spool/batch`. A package enables and starts the job controller (`batchd`); an upgrade restarts it, the queue survives. Removing a package keeps the queue, `dpkg --purge` removes it.
+
+            Arch names: deb `amd64 armhf arm64 mips mipsel mips64el`, rpm `x86_64 armv7hl aarch64 mips mipsel mips64el`. The .deb kits are installed and a job is run through them on Debian 12/13 and Ubuntu 24.04, the images of every processor are started under qemu-user, before this release is published. There is no OpenWrt kit: the queue is kept in `/var/spool/batch`, a tmpfs there.

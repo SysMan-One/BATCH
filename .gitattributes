@@ -21,3 +21,8 @@ CMakeLists.txt	text
 #  The rendered manuals are carried with the sources. They are binary and are never converted.
 #
 *.pdf	binary
+
+#
+#  The StarLet kit the packages are built with (packaging/third_party) is checked against its sha256.
+#
+*.tar.gz	binary

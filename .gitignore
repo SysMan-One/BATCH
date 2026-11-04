@@ -47,3 +47,7 @@ core.*
 #  Byte-compiled Python of the rendering script
 __pycache__/
 *.pyc
+
+#  Kits: the build tree and the output of packaging/build.sh
+build-pkg/
+dist/
