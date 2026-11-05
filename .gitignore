@@ -51,3 +51,11 @@ __pycache__/
 #  Kits: the build tree and the output of packaging/build.sh
 build-pkg/
 dist/
+
+#  Products of a build inside the source tree
+/src/Makefile
+/test/Makefile
+/src/batch
+/src/batchd
+/test/batch_queue
+/test/*.log
