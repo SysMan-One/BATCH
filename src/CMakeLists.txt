@@ -230,6 +230,8 @@ install(FILES	"${PROJECT_SOURCE_DIR}/doc/batch_users_guide.md"
 		"${PROJECT_SOURCE_DIR}/doc/batch_users_guide_fra.md"
 		"${PROJECT_SOURCE_DIR}/doc/batch_programmers_guide_fra.md"
 		"${PROJECT_SOURCE_DIR}/README.md"
+		"${PROJECT_SOURCE_DIR}/LICENSE"
+		"${PROJECT_SOURCE_DIR}/NOTICE"
 	DESTINATION "${CMAKE_INSTALL_DOCDIR}")
 
 #

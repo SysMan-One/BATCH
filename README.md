@@ -297,3 +297,7 @@ auxiliary variables `BATCH_CFG_*`. The macros generated from them retain the sep
 The command line of the job controller is parsed by the CLI services of the StarLet package:
 a qualifier may be introduced by a slash or a hyphen, may be abbreviated to any unambiguous leading
 portion, and takes its value through an equals sign — `/JOB_LIMIT=8` or `-j=8`.
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE) and [NOTICE](NOTICE).

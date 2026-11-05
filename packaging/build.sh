@@ -328,7 +328,7 @@ local	top="${TDIR}/rpm" spec="${TDIR}/rpm/batch.spec"
 	Version:	${REV}
 	Release:	${PKG_RELEASE}
 	Summary:	${SUMMARY}
-	License:	see README.md
+	License:	Apache-2.0
 	URL:		https://github.com/SysMan-One/BATCH
 	AutoReqProv:	no
 

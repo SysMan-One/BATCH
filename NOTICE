@@ -1,0 +1,8 @@
+BATCH - batch execution subsystem for shell scripts, like the OpenVMS batch queue
+Copyright 2019-2026 Ruslan (The BadAss SysMan) Laishev
+
+Licensed under the Apache License, Version 2.0 - see LICENSE.
+
+This product depends on, and is linked against, the StarLet utility
+routines and the HELP subsystem by the same author, both Apache License 2.0.
+The StarLet kit is in packaging/third_party/.
