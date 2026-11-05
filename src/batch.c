@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCH.C
-**  IDENT:		X-02-02ECO01
-**  REV:		02.02.01
+**  IDENT:		X-02-02ECO02
+**  REV:		02.02.02
 **
 **  FACILITY:		BATCH
 **
@@ -208,6 +208,9 @@
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **
 **	 3-NOV-2026	RRL	X-02-02ECO01	S_BATCH$UNKNOWN_TAGS: the unused L_PDU is gone (-Wunused-variable).
+**
+**	 5-NOV-2026	RRL	X-02-02ECO02	S_BATCH$SHOW_FULL: the owner is found by UTIL$GETPW, not GETPWUID (a static image
+**				must not ask the name service).
 **--
 */
 
@@ -247,8 +250,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCH"
-#define	__IDENT__	"X-02-02ECO01"
-#define	__REV__		"02.02.01"
+#define	__IDENT__	"X-02-02ECO02"
+#define	__REV__		"02.02.02"
 
 #define	BATCH$K_MINABBR	2				/* Shortest admissible abbreviation of a qualifier 			*/
 
@@ -1087,13 +1090,16 @@ static	int	s_batch$show_full (
 			BATCH$JOB *	a_job
 			)
 {
-struct passwd *	l_pw;
+UTIL$PWENT	l_pw;
 const char *	l_state;
 char		l_tim [32];
 int		l_i, l_any;
 
 	util$state_name(a_job->jb_state, &l_state);
-	l_pw = getpwuid((uid_t) a_job->jb_uid);
+
+	/* From /etc/passwd by UTIL$GETPW: the static image must not ask the name service */
+	if ( $IS_FAILURE(util$getpw(NULL, a_job->jb_uid, &l_pw)) )
+		l_pw.pw_name[0] = '\0';
 
 	util$put("\nEntry !UL, job !AZ, queue !AZ\n",
 			(const fao_prm_t []) { (fao_prm_t) a_job->jb_entry, (fao_prm_t) a_job->jb_name,
@@ -1106,7 +1112,7 @@ int		l_i, l_any;
 		util$put("    State ............ !AZ\n", (const fao_prm_t []) { (fao_prm_t) l_state }, 1);
 
 	util$put("    Owner ............ !AZ (uid !SL, gid !SL)\n",
-			(const fao_prm_t []) { (fao_prm_t) ((l_pw) ? l_pw->pw_name : "?"),
+			(const fao_prm_t []) { (fao_prm_t) ((l_pw.pw_name[0]) ? l_pw.pw_name : "?"),
 						(fao_prm_t) a_job->jb_uid, (fao_prm_t) a_job->jb_gid }, 3);
 	util$put("    Priority ......... !UL\n", (const fao_prm_t []) { (fao_prm_t) a_job->jb_prio }, 1);
 

@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-02-02ECO03
-**  REV:		02.02.03
+**  IDENT:		X-02-02ECO04
+**  REV:		02.02.04
 **
 **  FACILITY:		BATCH
 **
@@ -258,6 +258,12 @@
 **				BATCH$_SCRIPTDEV when it lets the device go.
 **
 **	 3-NOV-2026	RRL	X-02-02ECO03	S_BATCHD$SCHEDULE: the unused L_BEST is gone (-Wunused-variable).
+**
+**	 5-NOV-2026	RRL	X-02-02ECO04	/USER: the user is looked up in /etc/passwd and /etc/group by UTIL$GETPW and
+**				UTIL$GETGROUPS. The static image called GETPWNAM and INITGROUPS, and the static GNU C library
+**				then loads the name service modules of the host at run time (libnss_systemd): the controller
+**				fell with SIGSEGV on /USER=<a name that is not in the file>. Users of LDAP or SSSD are not
+**				seen any more, as they never were by a static image that did not crash.
 **--
 */
 
@@ -298,8 +304,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-02-02ECO03"
-#define	__REV__		"02.02.03"
+#define	__IDENT__	"X-02-02ECO04"
+#define	__REV__		"02.02.04"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/
@@ -316,6 +322,7 @@
 #define	BATCHD$K_CONNTMO	30 /* Seconds a connection may make no progress before it is dropped */
 #define	BATCHD$K_LISTENQ	16			/* Length of the queue of pending connections 				*/
 #define	BATCHD$K_EXECFAIL	126			/* Exit status when a job cannot be started 				*/
+#define	BATCHD$K_MAXGRP		128			/* Room for the supplementary groups of a job user				*/
 
 
 /*
@@ -1625,17 +1632,22 @@ int		l_fd, l_log = -1, l_i, l_argc, l_ncpu, l_core = -1, l_sts;
 		/* Assuming another identity is possible, and needed, only if the daemon runs as root */
 		if ( !geteuid() )
 			{
-			struct passwd *	l_pw = getpwuid((uid_t) l_job->jb_uid);
+			UTIL$PWENT	l_pwe;
+			gid_t		l_grp [BATCHD$K_MAXGRP];
+			int		l_ngrp;
 
 			/*
 			**  The supplementary groups of the controller are not the job's to keep: SETUID
 			**  leaves them as they were, so a job of an ordinary user would go on holding
 			**  whatever memberships the privileged daemon had. They are replaced by those of the
-			**  user the job runs as, or emptied where his name cannot be had.
+			**  user the job runs as, or emptied where his name cannot be had. They are read from
+			**  /etc/group by UTIL$GETGROUPS: INITGROUPS would ask the name service, which a static
+			**  image cannot do (see UTIL.C).
 			*/
-			if ( l_pw )
+			if ( $IS_SUCCESS(util$getpw(NULL, l_job->jb_uid, &l_pwe))
+				&& $IS_SUCCESS(util$getgroups(l_pwe.pw_name, (gid_t) l_job->jb_gid, l_grp, BATCHD$K_MAXGRP, &l_ngrp)) )
 				{
-				if ( initgroups(l_pw->pw_name, (gid_t) l_job->jb_gid) == -1 )
+				if ( setgroups((size_t) l_ngrp, l_grp) == -1 )
 					_exit(BATCHD$K_EXECFAIL);
 				}
 			else if ( setgroups(0, NULL) == -1 )
@@ -2177,8 +2189,9 @@ int		l_rc, l_ncpu;
 	*/
 	if ( l_job->jb_user[0] )
 		{
-		struct passwd *	l_pw;
+		UTIL$PWENT	l_pw;
 		struct stat	l_home;
+		int		l_psts;
 
 		/*
 		**  The entry is released before the refusal is returned. It was allocated above, and a
@@ -2196,7 +2209,7 @@ int		l_rc, l_ncpu;
 			return	$PUTMSG_FAO(BATCH$_NOPRIVUSER, a_uid, l_who);
 			}
 
-		if ( !(l_pw = getpwnam(l_job->jb_user)) )
+		if ( $IS_FAILURE(l_psts = util$getpw(l_job->jb_user, -1, &l_pw)) )
 			{
 			char	l_who [BATCH$K_USERSZ];
 
@@ -2204,11 +2217,15 @@ int		l_rc, l_ncpu;
 
 			s_batchd$job_free(l_ent);
 
+			/* A file that could not be read has been reported by UTIL$GETPW itself */
+			if ( l_psts != BATCH$_NOSUCHUSER )
+				return	l_psts;
+
 			return	$PUTMSG_FAO(BATCH$_NOSUCHUSER, l_who);
 			}
 
-		l_job->jb_uid	= (int) l_pw->pw_uid;
-		l_job->jb_gid	= (int) l_pw->pw_gid;
+		l_job->jb_uid	= (int) l_pw.pw_uid;
+		l_job->jb_gid	= (int) l_pw.pw_gid;
 
 		/*
 		**  The home directory, where there is one to be had: an account kept for a service rather
@@ -2217,10 +2234,10 @@ int		l_rc, l_ncpu;
 		**  instead - every user may enter it, and a job told to run as somebody else is ordinarily
 		**  told where to work by its own script.
 		*/
-		if ( (l_pw->pw_dir) && (l_pw->pw_dir[0] == '/') && (!stat(l_pw->pw_dir, &l_home))
+		if ( (l_pw.pw_dir[0] == '/') && (!stat(l_pw.pw_dir, &l_home))
 			&& (S_ISDIR(l_home.st_mode)) )
 			util$mkfspec(l_job->jb_cwd, sizeof(l_job->jb_cwd), "!AZ",
-					(const fao_prm_t []) { (fao_prm_t) l_pw->pw_dir }, 1);
+					(const fao_prm_t []) { (fao_prm_t) l_pw.pw_dir }, 1);
 		else	util$mkfspec(l_job->jb_cwd, sizeof(l_job->jb_cwd), "!AZ",
 					(const fao_prm_t []) { (fao_prm_t) "/" }, 1);
 

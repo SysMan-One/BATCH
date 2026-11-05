@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHDEF.H
-**  IDENT:		X-02-02ECO01
-**  REV:		02.02.01
+**  IDENT:		X-02-02ECO02
+**  REV:		02.02.02
 **
 **  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 **			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -70,6 +70,8 @@
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **
 **	28-OCT-2026	CLD	X-02-02ECO01	JB_FSID: the file system of the script, pinned beside its device.
+**
+**	 5-NOV-2026	RRL	X-02-02ECO02	UTIL$PWENT, UTIL$GETPW and UTIL$GETGROUPS.
 **--
 */
 
@@ -81,8 +83,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHDEF"
-#define	__IDENT__	"X-02-02ECO01"
-#define	__REV__		"02.02.01"
+#define	__IDENT__	"X-02-02ECO02"
+#define	__REV__		"02.02.02"
 
 #include	<sys/types.h>
 #include	<stdarg.h>
@@ -203,8 +205,20 @@ typedef struct batch_job_t {
 */
 
 /*
+**  An entry of /etc/passwd as far as the subsystem needs it: UTIL$GETPW delivers it.
+*/
+typedef struct util_pwent_t {
+	char	pw_name [BATCH$K_USERSZ];
+	char	pw_dir [BATCH$K_PATHSZ];
+	uid_t	pw_uid;
+	gid_t	pw_gid;
+} UTIL$PWENT;
+
+/*
 **  Prototypes of the general-purpose routines, implemented in module UTIL.C
 */
+int	util$getpw		(const char *a_name, int a_uid, UTIL$PWENT *a_pw);
+int	util$getgroups		(const char *a_name, gid_t a_gid, gid_t *a_list, int a_max, int *a_cnt);
 int	util$state_name		(unsigned int a_state, const char **a_name);
 long long util$tzoffset		(long long a_time);
 long long util$local2utc	(long long a_time);

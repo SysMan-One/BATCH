@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		UTIL.C
-**  IDENT:		X-02-02ECO01
-**  REV:		02.02.01
+**  IDENT:		X-02-02ECO02
+**  REV:		02.02.02
 **
 **  FACILITY:		BATCH
 **
@@ -75,10 +75,14 @@
 **	18-OCT-2026	RRL	X-02-02	Revision raised to X-02-02 together with the product; no change of its own.
 **
 **	28-OCT-2026	CLD	X-02-02ECO01	JRN$K_FSID written and read with the rest of the pin of the script.
+**
+**	 5-NOV-2026	RRL	X-02-02ECO02	UTIL$GETPW and UTIL$GETGROUPS: the user and the groups of a user from /etc/passwd
+**				and /etc/group, without the name service (see S_ETC_READ).
 **--
 */
 
 #include	<errno.h>
+#include	<fcntl.h>
 #include	<stdlib.h>
 #include	<string.h>
 #include	<unistd.h>
@@ -100,8 +104,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"UTIL"
-#define	__IDENT__	"X-02-02ECO01"
-#define	__REV__		"02.02.01"
+#define	__IDENT__	"X-02-02ECO02"
+#define	__REV__		"02.02.02"
 
 #define	UTIL$K_SECDAY	86400	/* Seconds in a day */
 #define	UTIL$K_OUTSZ	1024	/* Working buffer of UTIL$PUT */
@@ -879,6 +883,310 @@ size_t	l_rest;
 		l_p	+= l_rc;
 		l_rest	-= (size_t) l_rc;
 		}
+
+	return	BATCH$_NORMAL;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Reads a small text file whole into memory: /etc/passwd and /etc/group are read this way.
+**
+**	The images of this product are linked statically. A static GNU C library that is asked about
+**	a user by GETPWNAM, GETPWUID or INITGROUPS goes on to load the name service modules of the host
+**	(libnss_systemd and the like) at run time, and those are built against another library than
+**	the one in the image: the controller fell with SIGSEGV on a name that was not in the file.
+**	The two files are therefore read and taken apart here, and the name service is never asked.
+**
+**  INPUT PARAMETERS:
+**	a_path	- file specification, not NULL.
+**
+**  OUTPUT PARAMETERS:
+**	a_buf	- receives the buffer, terminated with a NUL, to be released with FREE(); not NULL.
+**	a_len	- receives the number of octets read, not NULL.
+**
+**  RETURNS:
+**	BATCH$_NORMAL, BATCH$_IOERR on a failure of the C RTL (reported here, with errno).
+**--
+*/
+static	int	s_etc_read (
+		const char *	a_path,
+		char **		a_buf,
+		size_t *	a_len
+		)
+{
+char *	l_buf, * l_new;
+size_t	l_len = 0, l_cap = 4096;
+ssize_t	l_rc;
+int	l_fd;
+
+	if ( 0 > (l_fd = open(a_path, O_RDONLY)) )
+		return	$PUTMSG_FAO(BATCH$_IOERR, "open", l_fd, errno, strerror(errno));
+
+	if ( !(l_buf = malloc(l_cap + 1)) )
+		{
+		close(l_fd);
+		return	$PUTMSG_FAO(BATCH$_IOERR, "malloc", 0, errno, strerror(errno));
+		}
+
+	for ( ; ; )
+		{
+		if ( l_len == l_cap )
+			{
+			if ( !(l_new = realloc(l_buf, (l_cap <<= 1) + 1)) )
+				{
+				free(l_buf);
+				close(l_fd);
+				return	$PUTMSG_FAO(BATCH$_IOERR, "realloc", 0, errno, strerror(errno));
+				}
+
+			l_buf = l_new;
+			}
+
+		l_rc = read(l_fd, l_buf + l_len, l_cap - l_len);
+
+		if ( (l_rc == -1) && (errno == EINTR) )
+			continue;
+
+		if ( l_rc < 0 )
+			{
+			free(l_buf);
+			close(l_fd);
+			return	$PUTMSG_FAO(BATCH$_IOERR, "read", (int) l_rc, errno, strerror(errno));
+			}
+
+		if ( !l_rc )
+			break;
+
+		l_len += (size_t) l_rc;
+		}
+
+	close(l_fd);
+
+	l_buf[l_len]	= '\0';
+	*a_buf		= l_buf;
+	*a_len		= l_len;
+
+	return	BATCH$_NORMAL;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Cuts a line of a colon-separated file into its fields in place: each colon is replaced
+**	with a NUL and the field is pointed to by a_fld.
+**
+**  INPUT PARAMETERS:
+**	a_line	- the line, terminated with a NUL, modified.
+**	a_max	- the room in a_fld.
+**
+**  OUTPUT PARAMETERS:
+**	a_fld	- pointers to the fields.
+**
+**  RETURNS:
+**	The number of the fields found.
+**--
+*/
+static	int	s_etc_split (
+		char *	a_line,
+		char **	a_fld,
+		int	a_max
+		)
+{
+int	l_cnt = 0;
+
+	for ( a_fld[l_cnt++] = a_line; *a_line; a_line++ )
+		{
+		if ( (*a_line == ':') && (l_cnt < a_max) )
+			{
+			*a_line = '\0';
+			a_fld[l_cnt++] = a_line + 1;
+			}
+		}
+
+	return	l_cnt;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Converts a field of /etc/passwd or /etc/group to a number: decimal digits only, not empty.
+**
+**  INPUT PARAMETERS:
+**	a_str	- the field.
+**
+**  OUTPUT PARAMETERS:
+**	a_val	- receives the number.
+**
+**  RETURNS:
+**	1 if the field is a number, 0 if not.
+**--
+*/
+static	int	s_etc_num (
+		const char *	a_str,
+		unsigned long *	a_val
+		)
+{
+char *	l_end;
+
+	if ( !*a_str )
+		return	0;
+
+	errno	= 0;
+	*a_val	= strtoul(a_str, &l_end, 10);
+
+	return	(!*l_end) && (!errno);
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Finds a user in /etc/passwd, by name or by number, without asking the name service.
+**
+**	Only the local file is consulted: a user that lives in LDAP, SSSD or another directory is
+**	not seen, and /USER names such a user in vain. The lines of the NIS compat form (+name, -name)
+**	and the comments are passed over.
+**
+**  INPUT PARAMETERS:
+**	a_name	- the name of the user, or NULL to look up by number.
+**	a_uid	- the number of the user, looked at when a_name is NULL.
+**
+**  OUTPUT PARAMETERS:
+**	a_pw	- receives the name, the home directory, the user and the group number, not NULL.
+**
+**  RETURNS:
+**	BATCH$_NORMAL when found. BATCH$_NOSUCHUSER when there is no such user: no message is issued,
+**	it is the caller who knows whom to name. BATCH$_IOERR when the file cannot be read.
+**--
+*/
+int	util$getpw (
+		const char *	a_name,
+		int		a_uid,
+		UTIL$PWENT *	a_pw
+		)
+{
+char *		l_buf, * l_cur, * l_nxt, * l_fld [8];
+size_t		l_len;
+unsigned long	l_uid, l_gid;
+int		l_sts, l_found = 0;
+
+	if ( $IS_FAILURE(l_sts = s_etc_read("/etc/passwd", &l_buf, &l_len)) )
+		return	l_sts;
+
+	for ( l_cur = l_buf; (*l_cur) && (!l_found); l_cur = l_nxt )
+		{
+		if ( (l_nxt = strchr(l_cur, '\n')) )
+			*l_nxt++ = '\0';
+		else	l_nxt = l_cur + strlen(l_cur);
+
+		if ( (*l_cur == '#') || (*l_cur == '+') || (*l_cur == '-') || (*l_cur == '\0') )
+			continue;
+
+		if ( 6 > s_etc_split(l_cur, l_fld, 7) )
+			continue;
+
+		if ( !s_etc_num(l_fld[2], &l_uid) || !s_etc_num(l_fld[3], &l_gid) )
+			continue;
+
+		if ( a_name ? strcmp(l_fld[0], a_name) : (l_uid != (unsigned long) a_uid) )
+			continue;
+
+		util$mkfspec(a_pw->pw_name, sizeof(a_pw->pw_name), "!AZ", (const fao_prm_t []) { (fao_prm_t) l_fld[0] }, 1);
+		util$mkfspec(a_pw->pw_dir, sizeof(a_pw->pw_dir), "!AZ", (const fao_prm_t []) { (fao_prm_t) l_fld[5] }, 1);
+		a_pw->pw_uid	= (uid_t) l_uid;
+		a_pw->pw_gid	= (gid_t) l_gid;
+		l_found		= 1;
+		}
+
+	free(l_buf);
+
+	return	(l_found) ? BATCH$_NORMAL : BATCH$_NOSUCHUSER;
+}
+
+/*
+**++
+**  FUNCTIONAL DESCRIPTION:
+**	Builds the list of the groups of a user from /etc/group, as INITGROUPS would, but without
+**	asking the name service: the primary group first, then every group that names the user among
+**	its members.
+**
+**  INPUT PARAMETERS:
+**	a_name	- the name of the user.
+**	a_gid	- the primary group of the user.
+**	a_max	- the room in a_list.
+**
+**  OUTPUT PARAMETERS:
+**	a_list	- receives the group numbers, not NULL.
+**	a_cnt	- receives their count, not NULL.
+**
+**  RETURNS:
+**	BATCH$_NORMAL, BATCH$_BUFOVF when there are more groups than a_max, BATCH$_IOERR when the file
+**	cannot be read.
+**--
+*/
+int	util$getgroups (
+		const char *	a_name,
+		gid_t		a_gid,
+		gid_t *		a_list,
+		int		a_max,
+		int *		a_cnt
+		)
+{
+char *		l_buf, * l_cur, * l_nxt, * l_mem, * l_end, * l_fld [5];
+size_t		l_len, l_nlen = strlen(a_name);
+unsigned long	l_gid;
+int		l_sts, l_cnt = 0, l_dup;
+
+	if ( $IS_FAILURE(l_sts = s_etc_read("/etc/group", &l_buf, &l_len)) )
+		return	l_sts;
+
+	a_list[l_cnt++] = a_gid;
+
+	for ( l_cur = l_buf; *l_cur; l_cur = l_nxt )
+		{
+		if ( (l_nxt = strchr(l_cur, '\n')) )
+			*l_nxt++ = '\0';
+		else	l_nxt = l_cur + strlen(l_cur);
+
+		if ( (*l_cur == '#') || (*l_cur == '+') || (*l_cur == '-') || (*l_cur == '\0') )
+			continue;
+
+		if ( 4 > s_etc_split(l_cur, l_fld, 4) )
+			continue;
+
+		if ( !s_etc_num(l_fld[2], &l_gid) )
+			continue;
+
+		/* The member list is a comma-separated one: the name has to match whole */
+		for ( l_mem = l_fld[3]; *l_mem; l_mem = (*l_end) ? l_end + 1 : l_end )
+			{
+			l_end = l_mem + strcspn(l_mem, ",");
+
+			if ( ((size_t) (l_end - l_mem) != l_nlen) || memcmp(l_mem, a_name, l_nlen) )
+				continue;
+
+			l_dup = 0;
+
+			for (int i = 0; i < l_cnt; i++)
+				l_dup |= (a_list[i] == (gid_t) l_gid);
+
+			if ( l_dup )
+				break;
+
+			if ( l_cnt == a_max )
+				{
+				free(l_buf);
+
+				return	BATCH$_BUFOVF;
+				}
+
+			a_list[l_cnt++] = (gid_t) l_gid;
+			break;
+			}
+		}
+
+	free(l_buf);
+	*a_cnt = l_cnt;
 
 	return	BATCH$_NORMAL;
 }

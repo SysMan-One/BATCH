@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X-02-02ECO03
-#  REV:			02.02.03
+#  IDENT:		X-02-02ECO04
+#  REV:			02.02.04
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -165,6 +165,10 @@
 #	28-OCT-2026	CLD	X-02-02ECO03	BATCH_K_IDENT raised to X-02-02ECO03: the script of a job is pinned by its
 #					file system too, and a device renumbered at boot is BATCH$_SCRIPTDEV
 #					rather than SCRIPTCHG (BATCHD.C X-02-02ECO02).
+#
+#	 5-NOV-2026	RRL	X-02-02ECO04	BATCH_K_IDENT raised to X-02-02ECO04: /USER and the owner shown by SHOW /FULL are
+#					read from /etc/passwd and /etc/group, not asked of the name service
+#					(BATCHD.C X-02-02ECO04).
 #--
 #
 
@@ -179,7 +183,7 @@ project(BATCH
 #  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
 #
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X-02-02ECO03"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X-02-02ECO04"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")
