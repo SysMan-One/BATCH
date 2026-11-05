@@ -48,6 +48,8 @@ then
 	fi
 elif command -v update-rc.d >/dev/null 2>&1 && [ -x "$SYSV" ]
 then
+	#  trixie's minimal image has update-rc.d but no /etc/init.d at all
+	mkdir -p /etc/init.d
 	cp -f "$SYSV" /etc/init.d/batchd
 	chmod 755 /etc/init.d/batchd
 	update-rc.d batchd defaults >/dev/null 2>&1 || true
