@@ -27,6 +27,9 @@
 #
 #		10-NOV-2026	CLD	Initial revision.
 #
+#		11-NOV-2026	CLD	VHELP_REF to HELP e7f90c4 (mdparse.c X01-02): the brackets of
+#					+[days-]hh[:mm[:ss]] stay in the help library.
+#
 #--
 
 name: CI
@@ -43,7 +46,7 @@ permissions:
 env:
   #	The HELP package: the same pinned commit as VHELP_REF of release.yml -
   #	the two are moved together.
-  VHELP_REF: 029fb368468c6594d81400f1713da4e06b0b4870
+  VHELP_REF: e7f90c4be659dec6fa5996520ea0ea827ca0b689
   STARLET_TGZ: packaging/third_party/starlet-1.7.1.tar.gz
 
 jobs:

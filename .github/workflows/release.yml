@@ -41,6 +41,9 @@
 #		10-NOV-2026	CLD	SHA256SUMS of a release is signed with minisign
 #					(SHA256SUMS.minisig), as BroTwins X.01-10ECO18 does.
 #
+#		11-NOV-2026	CLD	VHELP_REF to HELP e7f90c4 (mdparse.c X01-02): the brackets of
+#					+[days-]hh[:mm[:ss]] stay in the help library.
+#
 #--
 
 name: Kits
@@ -55,7 +58,7 @@ env:
   #	Bootlin tool chains, https://toolchains.bootlin.com
   TOOLCHAIN_RELEASE: stable-2026.08-1
   #	The HELP package: a pinned commit of https://github.com/SysMan-One/vHELP
-  VHELP_REF: 029fb368468c6594d81400f1713da4e06b0b4870
+  VHELP_REF: e7f90c4be659dec6fa5996520ea0ea827ca0b689
 
 jobs:
   build:
