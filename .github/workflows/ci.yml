@@ -1,0 +1,110 @@
+#++
+#	FACILITY: BATCH - continuous integration
+#
+#	AUTHOR: StarLet Squad and Ruslan R. Laishev (AKA: BadAss SysMan)
+#
+#	CREATION DATE: 10-NOV-2026
+#
+#	DESCRIPTION:
+#		Builds BATCH natively on x86_64 and aarch64 and runs its ctest
+#		(the queue primitives, SMOKE.SH, the System V start script).  The
+#		status of this workflow is the badge at the top of README.md.
+#
+#		    push to master, pull request, workflow_dispatch
+#
+#		StarLet is the kit carried in packaging/third_party (checked against
+#		its .sha256), HELP is the pinned commit of SysMan-One/vHELP - the same
+#		two that PACKAGING/BUILD.SH and release.yml build the kits with.  Both
+#		are installed into a prefix under RUNNER_TEMP, nothing into /usr/local.
+#
+#		The job runs as the user "runner", not as root: SMOKE.SH then skips
+#		the /USER and job log owner checks of the privileged user (and says
+#		so) and checks only that a queue pause is refused.  Look at the
+#		FIRST %BATCH-E-SMOKE of a failed run, the failures after it are
+#		often carried forward.
+#
+#	MODIFICATION HISTORY:
+#
+#		10-NOV-2026	CLD	Initial revision.
+#
+#--
+
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  #	The HELP package: the same pinned commit as VHELP_REF of release.yml -
+  #	the two are moved together.
+  VHELP_REF: 029fb368468c6594d81400f1713da4e06b0b4870
+  STARLET_TGZ: packaging/third_party/starlet-1.7.1.tar.gz
+
+jobs:
+  test:
+    name: ctest ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/checkout@v5
+        with:
+          repository: SysMan-One/vHELP
+          ref: ${{ env.VHELP_REF }}
+          path: vhelp
+
+      - name: Tools of the build host
+        run: sudo apt-get update -q && sudo apt-get install -y -q cmake python3
+
+      - name: StarLet and HELP
+        run: |
+          deps="${RUNNER_TEMP}/deps"
+          (cd "$(dirname "${STARLET_TGZ}")" && sha256sum -c "$(basename "${STARLET_TGZ}").sha256")
+          mkdir -p "${RUNNER_TEMP}/src"
+          tar -xzf "${STARLET_TGZ}" -C "${RUNNER_TEMP}/src"
+          starlet="${RUNNER_TEMP}/src/$(basename "${STARLET_TGZ}" .tar.gz)"
+
+          cmake -S "${starlet}" -B "${RUNNER_TEMP}/build/starlet" -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="${deps}"
+          cmake --build "${RUNNER_TEMP}/build/starlet" -j "$(nproc)"
+          cmake --install "${RUNNER_TEMP}/build/starlet"
+
+          cmake -S vhelp -B "${RUNNER_TEMP}/build/help" -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${deps}" -DCMAKE_INSTALL_PREFIX="${deps}" \
+            -DBUILD_TESTING=OFF -DHELP_TESTS=OFF -DHELP_BUILD_SYSCACHE=OFF -DHELP_ALIAS=OFF
+          cmake --build "${RUNNER_TEMP}/build/help" -j "$(nproc)"
+          cmake --install "${RUNNER_TEMP}/build/help"
+
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${RUNNER_TEMP}/deps" \
+            -DBATCH_M_TESTS=ON -DBATCH_M_SYSVINIT=ON -DBATCH_M_AUTOSTART=OFF
+          cmake --build build -j "$(nproc)"
+
+      - name: ctest
+        run: ctest --test-dir build --output-on-failure
+
+      #	The log of a job is not readable without signing in; an annotation is.
+      #	The first %BATCH-E-SMOKE is the one to look at.
+      - name: First failure of the tests
+        if: failure()
+        run: |
+          log=build/Testing/Temporary/LastTest.log
+          [ -f "${log}" ] || exit 0
+          first=$(grep -m1 -E '%BATCH-[EF]-' "${log}" || true)
+          [ -n "${first}" ] && echo "::error title=ctest ${{ matrix.arch }}::${first}"
+          exit 0

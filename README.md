@@ -1,5 +1,7 @@
 # BATCH — batch execution subsystem for shell scripts
 
+[![CI](https://github.com/SysMan-One/BATCH/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/SysMan-One/BATCH/actions/workflows/ci.yml)
+
 A functional equivalent of the OpenVMS batch job queue (`SUBMIT` / `SHOW QUEUE`) for Linux.
 A script is placed in a queue and executed in the background under the control of a resident
 job controller, rather than being started directly as `cron` does.
@@ -174,7 +176,7 @@ git tag X-02-02ECO03 && git push origin X-02-02ECO03    # the tag is BATCH_K_IDE
 ```
 
 * a push to `master` (or *Run workflow*) builds the kits and keeps them as workflow artifacts;
-* a push of a tag `X-nn-nn[ECOnn]` also installs the `.deb` on Debian and Ubuntu, starts the images of every processor under qemu-user, runs a job through them, and only then publishes a GitHub Release with all the kits, the source kit and `SHA256SUMS`. The tag must be `BATCH_K_IDENT` of `CMakeLists.txt` and the `__IDENT__` of `src/batchd.c` - the release job refuses one that is not.
+* a push of a tag `X-nn-nn[ECOnn]` also installs the `.deb` on Debian and Ubuntu, starts the images of every processor under qemu-user, runs a job through them, and only then publishes a GitHub Release with all the kits, the source kit, `SHA256SUMS` and its minisign signature `SHA256SUMS.minisig` (the secret `MINISIGN_KEY` of the repository; without it the release job fails rather than publish an unsigned release). The tag must be `BATCH_K_IDENT` of `CMakeLists.txt` and the `__IDENT__` of `src/batchd.c` - the release job refuses one that is not.
 
 `packaging/build.sh` builds the kits of ONE processor and is what the workflow runs:
 
@@ -183,6 +185,27 @@ CROSS_PREFIX=<tool chain>/bin/mipsel-buildroot-linux-gnu- VHELP_SRC=<vHELP check
 ```
 
 It builds StarLet (the kit `packaging/third_party/starlet-1.7.1.tar.gz`, checked against its `.sha256`) and HELP for the build host and for the target first, then BATCH. `packaging/test/deb.sh` and `packaging/test/kits.sh` are the tests of the workflow. The package version (`aa.bb.cc`) is made of `BATCH_K_IDENT` (`X-aa-bbECOcc`).
+
+Every push to `master` and every pull request is also built and tested natively on x86_64 and aarch64 by `.github/workflows/ci.yml` (workflow *CI*, the badge at the top): StarLet and HELP as the kits have them, then `ctest`. It runs unprivileged, so the `/USER` and job log owner checks of the privileged user are skipped there (and reported as such) and the pause check only sees a refusal; when it fails, the first `%BATCH-E-SMOKE` of the log is the one to look at.
+
+## Checking a download
+
+The releases after X-02-02ECO04 carry `SHA256SUMS.minisig`, a
+[minisign](https://jedisct1.github.io/minisign/) signature of `SHA256SUMS`:
+one signature for every file of the release. The public key is in
+`minisign.pub` here (the same key signs the kits of BroTwins and AlphaEmu):
+
+    RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14
+
+Put the kits you took next to `SHA256SUMS` and `SHA256SUMS.minisig`, then:
+
+    minisign -Vm SHA256SUMS -P RWQl4NAqFsHKkNoHkS52WSZSk+2kb+e58DWYpoi/jVFa6TqOTAm3Ph14
+    sha256sum -c --ignore-missing SHA256SUMS
+
+The first must say `Signature and comment signature verified`, the second
+`OK` for every kit. Anything else - the file is not the one released: do
+not install it. Releases up to X-02-02ECO04 have `SHA256SUMS` only (they
+are immutable, a signature cannot be added to them).
 
 ## Quick start
 
