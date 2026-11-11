@@ -1,7 +1,7 @@
 #!/bin/bash
 #++
 #  MODULE:		SMOKE.SH
-#  IDENT:		X-02-02ECO02
+#  IDENT:		X-02-02ECO03
 #  REV:			02.02.02
 #
 #  FACILITY:		BATCH
@@ -113,6 +113,10 @@
 #					journal while a controller of its own is down. With the file system
 #					pinned the job runs, as SCRIPTDEV; a record without one is SCRIPTCHG.
 #					The User's Guides are to speak of SCRIPTDEV.
+#
+#	11-NOV-2026	CLD	X-02-02ECO03 "not the privileged user, /USER is not exercised" was said
+#					to root as well, after the /USER checks had passed: its test was
+#					[ "1" = "0" ] rather than the user id.
 #--
 #
 
@@ -858,7 +862,7 @@ Q=`"${g_batch}" show /all 2>&1`
 [ "${P}" = "${Q}" ]
 l_check $? "/PAGE is accepted and leaves redirected output untouched"
 
-if [ "1" = "0" ] ; then
+if [ "`id -u`" = "0" ] ; then
 	:
 else
 	echo "%BATCH-I-SMOKE, not the privileged user, /USER is not exercised"
