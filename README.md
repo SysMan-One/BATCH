@@ -204,8 +204,8 @@ Put the kits you took next to `SHA256SUMS` and `SHA256SUMS.minisig`, then:
 
 The first must say `Signature and comment signature verified`, the second
 `OK` for every kit. Anything else - the file is not the one released: do
-not install it. Releases up to X-02-02ECO04 have `SHA256SUMS` only (they
-are immutable, a signature cannot be added to them).
+not install it. Releases up to X-02-02ECO04 were published with
+`SHA256SUMS` only, without a signature.
 
 ## Quick start
 
