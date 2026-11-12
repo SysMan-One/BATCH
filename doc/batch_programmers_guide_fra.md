@@ -545,10 +545,13 @@ rend.
 `IDENT` et `REV` paraissent deux fois dans un module — dans l'en-tête et dans les macros `__IDENT__`
 et `__REV__` — et doivent s'accorder.
 
-L'identification est `X-aa-bb`, à la manière VMS, et `REV` s'en déduit partie pour partie :
-`X-aa-bbECOcc` donne `aa.bb.cc`, ainsi `X-01-29` donne `01.29.00`. Une petite correction de faute n'élève
-pas `bb` ; elle se marque `ECO`, et le numéro de l'ECO prend la troisième place — `X-01-29ECO01` donne
-`01.29.01`. Chaque entrée de l'historique des
+L'identification est `X.aa-bb`, à la manière VMS — un point après la lettre —, et `REV` s'en déduit
+partie pour partie : `X.aa-bbECOcc` donne `aa.bb.cc`, ainsi `X.01-29` donne `01.29.00`. Une petite
+correction de faute n'élève pas `bb` ; elle se marque `ECO`, toujours sur deux chiffres, et le numéro
+de l'ECO prend la troisième place — `X.01-29ECO01` donne `01.29.01`. L'étiquette d'une livraison est
+l'identification elle-même, sans `v`. Un module inchangé depuis le 12-NOV-2026 peut porter encore
+l'ancienne forme `X-aa-bb[ECOcc]`, et les étiquettes déjà publiées la gardent ; la construction
+accepte les deux formes. Chaque entrée de l'historique des
 modifications porte `RRL` entre la date et l'identification.
 
 ## 5.3 La convention d'appel

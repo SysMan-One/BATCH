@@ -498,10 +498,12 @@ does, its input and output parameters and what it returns.
 `IDENT` and `REV` appear twice in a module — in the header and in the `__IDENT__` and `__REV__`
 macros — and are to agree.
 
-The identification is `X-aa-bb` in the VMS manner, and `REV` is derived from it part for part:
-`X-aa-bbECOcc` gives `aa.bb.cc`, so `X-01-29` gives `01.29.00`. A small correction of a fault does not
-raise `bb`; it is marked `ECO` instead, and the ECO number takes the third place — `X-01-29ECO01`
-gives `01.29.01`. Every entry of the
+The identification is `X.aa-bb` in the VMS manner — a dot after the letter — and `REV` is derived
+from it part for part: `X.aa-bbECOcc` gives `aa.bb.cc`, so `X.01-29` gives `01.29.00`. A small
+correction of a fault does not raise `bb`; it is marked `ECO` instead, always of two digits, and the
+ECO number takes the third place — `X.01-29ECO01` gives `01.29.01`. A release tag is the
+identification itself, with no `v`. A module not changed since 12-NOV-2026 may still carry the older
+form `X-aa-bb[ECOcc]`, and the published tags keep it; the build takes both forms. Every entry of the
 modification history carries `RRL` between the date and the identification.
 
 ## 5.3 The Calling Convention
