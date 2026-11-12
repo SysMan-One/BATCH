@@ -14,12 +14,15 @@
 #		before a release is published.
 #
 #		    push to master, workflow_dispatch	the kits as workflow artifacts
-#		    push of a tag X-nn-nn[ECOnn]	the same, plus a GitHub Release
+#		    push of a tag X.nn-nn[ECOnn]	the same, plus a GitHub Release
 #						of that name with all the kits,
 #						the source kit, SHA256SUMS and
 #						SHA256SUMS.minisig
 #
-#		To release:	git tag X-02-02ECO03 && git push origin X-02-02ECO03
+#		To release:	git tag X.02-02ECO05 && git push origin X.02-02ECO05
+#
+#		The tag is the ident itself, no "v".  The old form X-nn-nn[ECOnn]
+#		(X-02-02ECO04 and before) still starts the workflow.
 #
 #		The tag must be BATCH_K_IDENT of CMakeLists.txt and the __IDENT__ of
 #		the head module SRC/BATCHD.C - the release job refuses one that is
@@ -44,6 +47,9 @@
 #		11-NOV-2026	CLD	VHELP_REF to HELP e7f90c4 (mdparse.c X01-02): the brackets of
 #					+[days-]hh[:mm[:ss]] stay in the help library.
 #
+#		12-NOV-2026	CLD	Tags X.* too: an ident is X.aa-bb[ECOcc] since 12-NOV-2026,
+#					the old X-aa-bb[ECOcc] tags still work.
+#
 #--
 
 name: Kits
@@ -51,7 +57,7 @@ name: Kits
 on:
   push:
     branches: [ master ]
-    tags: [ 'X-*' ]
+    tags: [ 'X.*', 'X-*' ]
   workflow_dispatch:
 
 env:

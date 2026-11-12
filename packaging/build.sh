@@ -72,6 +72,10 @@
 #
 #		04-NOV-2026	RRL	X-02-02ECO03 : Initial revision, after BroTwins' PACKAGING/BUILD.SH.
 #
+#		12-NOV-2026	CLD	BATCH_K_IDENT may be X.aa-bb[ECOcc] (the form of every
+#					project since 12-NOV-2026) as well as the old X-aa-bb[ECOcc];
+#					the revision is derived the same way.
+#
 #--
 
 set -euo pipefail
@@ -133,11 +137,15 @@ say ()
 #	The ident of the product is BATCH_K_IDENT of the top CMakeLists.txt - the
 #	very value that the controller prints in its banner "%BATCH-S-IDENT".  The
 #	head module BATCHD.C must say the same, the release job checks it against
-#	the tag.  The revision (X-aa-bbECOcc -> aa.bb.cc) is what the packages
-#	are versioned by, and BATCHD.C carries it as __REV__.
+#	the tag.  The revision (X.aa-bbECOcc -> aa.bb.cc) is what the packages
+#	are versioned by, and BATCHD.C carries it as __REV__.  The ident is
+#	X.aa-bb[ECOcc] (two digits each); the old X-aa-bb[ECOcc] is taken too.
+#	The capturing match comes last: every =~ rewrites BASH_REMATCH.
 #
 IDENT=$(sed -n 's/^set(BATCH_K_IDENT[[:space:]]*"\([^"]*\)".*/\1/p' "${TOPDIR}/CMakeLists.txt")
-[[ "${IDENT}" =~ ^X-([0-9]+)-([0-9]+)(ECO([0-9]+))?$ ]] || { echo "$0: BATCH_K_IDENT '${IDENT}' is not X-aa-bb[ECOcc]" >&2; exit 2; }
+[[ "${IDENT}" =~ ^X\.[0-9]{2}-[0-9]{2}(ECO[0-9]{2})?$ || "${IDENT}" =~ ^X-[0-9]+-[0-9]+(ECO[0-9]+)?$ ]] \
+	|| { echo "$0: BATCH_K_IDENT '${IDENT}' is not X.aa-bb[ECOcc] (nor the old X-aa-bb[ECOcc])" >&2; exit 2; }
+[[ "${IDENT}" =~ ^X[.-]([0-9]+)-([0-9]+)(ECO([0-9]+))?$ ]]
 REV=$(printf '%02d.%02d.%02d' "$((10#${BASH_REMATCH[1]}))" "$((10#${BASH_REMATCH[2]}))" "$((10#${BASH_REMATCH[4]:-0}))")
 
 HEAD_IDENT=$(sed -n 's/^#define[[:space:]]*__IDENT__[[:space:]]*"\(.*\)".*/\1/p' "${TOPDIR}/src/batchd.c")
