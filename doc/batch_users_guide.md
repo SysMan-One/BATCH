@@ -420,7 +420,7 @@ A job is created by the controller and takes from it what it does not name itsel
 | Control group | Inherited. Cannot be set per job. |
 | Identity | **Not** inherited: the job runs as whoever submitted it. |
 | Working directory | **Not** inherited: the job starts where it was submitted from. |
-| Environment | **Not** inherited: the job is given `BATCH_*`, `P1` … `P8` and nothing else of the controller's. |
+| Environment | Inherited, with a few variables added. See below. |
 
 The controller states the affinity mask it runs under when it starts, so a controller started under
 `taskset`, or with `CPUAffinity=` in its unit, does not constrain its jobs unnoticed:
@@ -431,6 +431,39 @@ The controller states the affinity mask it runs under when it starts, so a contr
 
 Note that a control group limit such as `CPUQuota=` applies to the controller and every job it
 creates, taken together.
+
+**The environment of a job.** The job gets the environment of the controller, and the subsystem
+adds a few variables to it:
+
+* `BATCH_ENTRY`, `BATCH_NAME`, `BATCH_QUEUE`, `BATCH_RESTART` and `BATCH_RESTARTS` (see 4.2);
+* `P1` … `P8`, the values of `/PARAMETERS`. All eight are always set; an unused one is empty.
+
+Nothing else is set. In particular the subsystem does **not** set `HOME`, `USER`, `LOGNAME`,
+`SHELL` or `PATH`, not even with `/USER`.
+
+Everything else comes from the controller, and the controller has the environment it was started
+with. Under systemd that is the environment of the `batchd` unit: systemd gives it `PATH`
+(on Debian `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`), `LANG`, and a few of
+its own variables such as `INVOCATION_ID`, but no `HOME` and no `USER`. Under the System V script
+it is the environment of the script. So `PATH` in a job is the `PATH` of the unit.
+
+The environment of the user who submitted the job is **not** passed on. `batch submit` sends the
+controller the script, its qualifiers and your current directory, but not your variables. A
+`PATH` you set in your login shell, or in `~/.profile`, is not seen by the job.
+
+If a job needs a particular `PATH`, or `HOME`, or any other variable, let the script set it
+itself, near the top:
+
+```sh
+#!/bin/sh
+PATH=/opt/batch/bin:/usr/local/bin:/usr/bin:/bin
+HOME=$(getent passwd "$(id -un)" | cut -d: -f6)
+export PATH HOME
+```
+
+To change the environment of every job at once, change the environment of the controller, for
+example with `Environment=` in a drop-in (`systemctl edit batchd`), and restart it. Jobs already
+running keep the environment they started with.
 
 ---
 
@@ -1954,7 +1987,7 @@ $ cat /var/spool/batch/log/nightly_7.log
 | Status | Usual cause |
 |---|---|
 | `exit=126` | The job could not be started at all: the interpreter, the working directory, the log file or the processor list. See below. |
-| `exit=127` | The interpreter did not find something the script called for. Usually `PATH`: a job is given `BATCH_*` and `P1` … `P8` and nothing else, so it does not inherit yours. |
+| `exit=127` | The interpreter did not find something the script called for. Usually `PATH`: a job has the `PATH` of the controller (of its systemd unit), not yours. Set `PATH` in the script (see 3.5). |
 | `exit=`*n* | The script itself returned that status. Its own affair. |
 | `signal=15` | The job was deleted, or the system stopped it. |
 | `signal=9` | Killed outright, commonly by the memory manager. |
@@ -2075,6 +2108,9 @@ the sender identification obtained from the kernel and verified for every reques
 | `BATCH_RESTART` | Job | `TRUE` when the job is run again after a restart of the controller |
 | `BATCH_RESTARTS` | Job | Number of times the job has been restarted |
 | `P1` … `P8` | Job | Job parameters |
+
+These are the only variables the subsystem sets for a job. Every other variable of a job, `PATH`
+included, comes from the environment of the controller (see 3.5).
 
 ---
 

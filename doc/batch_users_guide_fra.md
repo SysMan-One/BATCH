@@ -334,6 +334,33 @@ Le sous-système ajoute à son environnement :
 | `BATCH_RESTARTS` | Le nombre de relances |
 | `P1` … `P8` | Les valeurs de `/PARAMETERS` |
 
+Les huit `P1` … `P8` sont toujours posées ; une valeur non donnée est vide. Le sous-système ne pose
+rien d'autre : ni `HOME`, ni `USER`, ni `LOGNAME`, ni `SHELL`, ni `PATH`, pas même avec `/USER`.
+
+Tout le reste vient du contrôleur, et le contrôleur a l'environnement avec lequel il a été lancé.
+Sous systemd, c'est celui de l'unité `batchd` : systemd lui donne `PATH` (sous Debian
+`/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`), `LANG` et quelques variables à lui
+comme `INVOCATION_ID`, mais ni `HOME` ni `USER`. Sous le script System V, c'est celui du script.
+Le `PATH` d'un travail est donc le `PATH` de l'unité.
+
+L'environnement de celui qui soumet n'est **pas** transmis : `batch submit` envoie au contrôleur le
+script, les qualificatifs et le répertoire courant, pas vos variables. Un `PATH` posé dans votre
+shell ou dans `~/.profile` n'est pas vu par le travail.
+
+Un travail qui a besoin d'un `PATH` précis, de `HOME` ou d'une autre variable la pose lui-même, en
+tête du script :
+
+```sh
+#!/bin/sh
+PATH=/opt/batch/bin:/usr/local/bin:/usr/bin:/bin
+HOME=$(getent passwd "$(id -un)" | cut -d: -f6)
+export PATH HOME
+```
+
+Pour changer l'environnement de tous les travaux à la fois, changez celui du contrôleur, par exemple
+par `Environment=` dans un complément (`systemctl edit batchd`), puis relancez-le. Les travaux déjà
+en cours gardent l'environnement avec lequel ils ont démarré.
+
 ---
 
 # Chapitre 4
@@ -803,7 +830,9 @@ Il reste Pending. Regardez, dans cet ordre :
 le reste.
 
 Un code de 126 signale que le travail n'a pu être lancé : script disparu ou remplacé, répertoire de
-travail inaccessible, journal impossible à créer. Un code au-dessus de 128 signale que la commande
+travail inaccessible, journal impossible à créer. Un code de 127 signale que l'interpréteur n'a pas
+trouvé une commande ; le plus souvent c'est le `PATH` : le travail a celui du contrôleur (de son
+unité systemd), pas le vôtre. Posez `PATH` dans le script (voir 3.5). Un code au-dessus de 128 signale que la commande
 qu'exécutait l'interpréteur a été tuée.
 
 ## 7.5 La file est vide après un redémarrage
@@ -870,6 +899,9 @@ changement de révision dans les deux sens.
 | `BATCH_ENTRY`, `BATCH_NAME`, `BATCH_QUEUE` | le travail | Son identité |
 | `BATCH_RESTART`, `BATCH_RESTARTS` | le travail | S'il a été relancé, et combien de fois |
 | `P1` … `P8` | le travail | Les valeurs de `/PARAMETERS` |
+
+Ce sont les seules variables que le sous-système pose pour un travail. Toutes les autres, `PATH`
+compris, viennent de l'environnement du contrôleur (voir 3.5).
 
 ---
 

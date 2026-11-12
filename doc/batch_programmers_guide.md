@@ -296,6 +296,13 @@ directory, descriptors, environment, `execv`. `s_batchd$schedule` chooses what t
 what has waited long enough. `s_batchd$reap` collects the status of terminated jobs and decides
 whether the entry stays.
 
+The environment of a job is that of the controller, inherited through `fork` and `execv`, with
+`BATCH_ENTRY`, `BATCH_NAME`, `BATCH_QUEUE`, `BATCH_RESTART`, `BATCH_RESTARTS` and `P1` … `P8` set
+on top by `setenv`. Nothing is cleared, and `HOME`, `USER`, `LOGNAME`, `SHELL` and `PATH` are not
+set, so under systemd a job sees the `PATH` of the unit. The environment of the submitter never
+reaches the controller: the request carries no variables. Queued scripts rely on the inherited
+`PATH`; clearing the environment here would be a change visible to users.
+
 **Requests.** `s_batchd$do_submit`, `s_batchd$do_delete`, `s_batchd$do_show` and the `IPC$K_RELEASE`
 branch of `s_batchd$conn_dispatch`. `s_batchd$job_selected` states the selection rule of `SHOW` in
 one place, because the queue is walked twice — to count and to transmit — and the two passes must

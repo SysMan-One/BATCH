@@ -314,6 +314,13 @@ répertoire de travail, descripteurs, environnement, `execv`. `s_batchd$schedule
 s'exécute et libère ce qui a assez attendu. `s_batchd$reap` recueille l'état de fin des travaux
 terminés et décide si l'entrée demeure.
 
+L'environnement d'un travail est celui du contrôleur, hérité par `fork` et `execv`, auquel `setenv`
+ajoute `BATCH_ENTRY`, `BATCH_NAME`, `BATCH_QUEUE`, `BATCH_RESTART`, `BATCH_RESTARTS` et
+`P1` … `P8`. Rien n'est effacé, et `HOME`, `USER`, `LOGNAME`, `SHELL` et `PATH` ne sont pas posés :
+sous systemd, un travail voit le `PATH` de l'unité. L'environnement de celui qui soumet n'atteint
+jamais le contrôleur : la requête ne porte aucune variable. Les scripts en file comptent sur le
+`PATH` hérité ; effacer l'environnement ici serait un changement visible des utilisateurs.
+
 **Les requêtes.** `s_batchd$do_submit`, `s_batchd$do_delete`, `s_batchd$do_show`,
 `s_batchd$do_mgrstat` et la branche `IPC$K_RELEASE` de `s_batchd$conn_dispatch`.
 `s_batchd$job_selected` énonce en un seul endroit la règle de sélection de `SHOW`, car la file est
