@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X-02-02ECO04
-**  REV:		02.02.04
+**  IDENT:		X.02-02ECO05
+**  REV:		02.02.05
 **
 **  FACILITY:		BATCH
 **
@@ -264,6 +264,10 @@
 **				then loads the name service modules of the host at run time (libnss_systemd): the controller
 **				fell with SIGSEGV on /USER=<a name that is not in the file>. Users of LDAP or SSSD are not
 **				seen any more, as they never were by a static image that did not crash.
+**
+**	12-NOV-2026	RRL	X.02-02ECO05	S_BATCHD$JOB_START: its comment lists every variable a job is given
+**				(BATCH_RESTART, BATCH_RESTARTS were missing) and says that the rest of the
+**				environment is inherited from the controller on purpose. No change of code.
 **--
 */
 
@@ -304,8 +308,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X-02-02ECO04"
-#define	__REV__		"02.02.04"
+#define	__IDENT__	"X.02-02ECO05"
+#define	__REV__		"02.02.05"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/
@@ -1469,8 +1473,8 @@ static	int	s_batchd$pin_same (
 **	order: creation of a new session, restoration of the default signal disposition, assumption of
 **	the submitter's identity, change of the working directory, opening of the job log with
 **	replacement of the standard input, output and error descriptors, establishment of the
-**	environment variables BATCH_ENTRY, BATCH_NAME, BATCH_QUEUE and P1 through P8, and finally
-**	replacement of the image.
+**	environment variables BATCH_ENTRY, BATCH_NAME, BATCH_QUEUE, BATCH_RESTART, BATCH_RESTARTS and
+**	P1 through P8, and finally replacement of the image by BATCH$K_SHELL.
 **
 **	Creation of a new session is essential: it makes the job the leader of its own process group,
 **	which afterwards permits the whole tree of processes it created to be terminated by a single
@@ -1482,6 +1486,28 @@ static	int	s_batchd$pin_same (
 **  OUTPUT PARAMETERS:
 **	The fields jb_pid, jb_stime and jb_state of the descriptor are updated. If the process cannot be
 **	created, the job is moved to the JOB$K_RETAINED state with an exit status of -1.
+**
+**  IMPLICIT INPUTS:
+**	The environment of the controller itself. The created process inherits it through fork(2) and
+**	execv(2), and nothing of it is cleared: HOME, USER, LOGNAME, SHELL and PATH are not set here, so
+**	a job sees those of BATCHD - under systemd those of the unit, under the System V script those
+**	of the script. The environment of the submitter never reaches the controller, the request
+**	carries no variables. This is on purpose: queued scripts rely on the inherited PATH, and
+**	clearing the environment here would be a change visible to users.
+**
+**  IMPLICIT OUTPUTS:
+**	The environment of the created process gets, on top of the inherited one (an inherited variable
+**	of the same name is replaced):
+**	BATCH_ENTRY	- the entry number of the job, decimal.
+**	BATCH_NAME	- the name of the job, as it is in the descriptor.
+**	BATCH_QUEUE	- the name of the queue, as it is in the descriptor.
+**	BATCH_RESTART	- "TRUE" if the job has been run again after a restart of the controller
+**			(/RESTART), otherwise "FALSE", in the manner of $RESTART of OpenVMS.
+**	BATCH_RESTARTS	- the number of times it has been so run, decimal; 0 for the first run.
+**	P1 ... P8	- the parameters of the job. All eight are always set, an unused one to the empty
+**			string; the non-empty ones are also passed, in order, as the positional
+**			arguments of the command file - an empty one is skipped there, so $2 is
+**			not P2 when P1 is empty.
 **
 **  RETURNS:
 **	BATCH$_JOBSTART if the process was created, otherwise BATCH$_FORKERR.

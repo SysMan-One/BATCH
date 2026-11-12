@@ -120,7 +120,7 @@ UNIX domain sockets, the `SO_PEERCRED` socket option, `daemon(3)` and `poll(2)`.
 | `BATCH_K_SPOOLROOT` | `/var/spool/batch` | subsystem root directory |
 | `BATCH_K_SHELL` | `/bin/sh` | command interpreter created for a job |
 | `BATCH_K_FACILITY` | `BATCH` | facility name appearing in messages |
-| `BATCH_K_IDENT` | `X-02-02ECO04` | product revision identification |
+| `BATCH_K_IDENT` | `X.02-02ECO05` | product revision identification |
 | `BATCH_M_STRICT` | `OFF` | treat compiler diagnostics as errors |
 | `BATCH_M_TESTS` | `ON` | build and register the functional tests |
 | `BATCH_M_SYSTEMD` | `ON` | install the systemd unit of the job controller |
