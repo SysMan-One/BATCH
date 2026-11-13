@@ -120,7 +120,7 @@ UNIX domain sockets, the `SO_PEERCRED` socket option, `daemon(3)` and `poll(2)`.
 | `BATCH_K_SPOOLROOT` | `/var/spool/batch` | subsystem root directory |
 | `BATCH_K_SHELL` | `/bin/sh` | command interpreter created for a job |
 | `BATCH_K_FACILITY` | `BATCH` | facility name appearing in messages |
-| `BATCH_K_IDENT` | `X.02-02ECO05` | product revision identification |
+| `BATCH_K_IDENT` | `X.02-02ECO06` | product revision identification |
 | `BATCH_M_STRICT` | `OFF` | treat compiler diagnostics as errors |
 | `BATCH_M_TESTS` | `ON` | build and register the functional tests |
 | `BATCH_M_SYSTEMD` | `ON` | install the systemd unit of the job controller |
@@ -172,7 +172,7 @@ The kits - `.deb`, `.rpm` and `.tar.gz` for x86_64, armhf, arm64, mips, mipsel a
 Static glibc has one catch: the user names (`/USER`, the owner shown by `SHOW /FULL`, the groups of a job) are looked up by the NSS libraries of the host, so a glibc host is needed (every Debian, Ubuntu, RHEL, Fedora; not Alpine). The workflow checks it on Debian 12/13 and Ubuntu 24.04 before it publishes anything. Known defect of the static image: `/USER=<a name the files do not have>` makes glibc load `libnss_systemd` into a static process and `batchd` dies with SIGSEGV (seen on Debian 12); the check in `packaging/test/deb.sh` fails until the names are looked up without NSS or the images are linked dynamically.
 
 ```sh
-git tag X.02-02ECO05 && git push origin X.02-02ECO05    # the tag is BATCH_K_IDENT itself, no "v"
+git tag X.02-02ECO06 && git push origin X.02-02ECO06    # the tag is BATCH_K_IDENT itself, no "v"
 ```
 
 * a push to `master` (or *Run workflow*) builds the kits and keeps them as workflow artifacts;
@@ -184,7 +184,7 @@ git tag X.02-02ECO05 && git push origin X.02-02ECO05    # the tag is BATCH_K_IDE
 CROSS_PREFIX=<tool chain>/bin/mipsel-buildroot-linux-gnu- VHELP_SRC=<vHELP checkout> packaging/build.sh mipsel dist
 ```
 
-It builds StarLet (the kit `packaging/third_party/starlet-1.7.1.tar.gz`, checked against its `.sha256`) and HELP for the build host and for the target first, then BATCH. `packaging/test/deb.sh` and `packaging/test/kits.sh` are the tests of the workflow. The package version (`aa.bb.cc`) is made of `BATCH_K_IDENT` (`X.aa-bbECOcc`: `X.02-02ECO05` gives `02.02.05`); the older form `X-aa-bbECOcc` is taken too.
+It builds StarLet (the kit `packaging/third_party/starlet-1.7.1.tar.gz`, checked against its `.sha256`) and HELP for the build host and for the target first, then BATCH. `packaging/test/deb.sh` and `packaging/test/kits.sh` are the tests of the workflow. The package version (`aa.bb.cc`) is made of `BATCH_K_IDENT` (`X.aa-bbECOcc`: `X.02-02ECO05` gives `02.02.05`); the older form `X-aa-bbECOcc` is taken too. The version of the CMake project, which the controller prints in its banner, is made of the same ident without the leading zeros (`X.02-02ECO06` gives `2.2.6`).
 
 Every push to `master` and every pull request is also built and tested natively on x86_64 and aarch64 by `.github/workflows/ci.yml` (workflow *CI*, the badge at the top): StarLet and HELP as the kits have them, then `ctest`. It runs unprivileged, so the `/USER` and job log owner checks of the privileged user are skipped there (and reported as such) and the pause check only sees a refusal; when it fails, the first `%BATCH-E-SMOKE` of the log is the one to look at.
 

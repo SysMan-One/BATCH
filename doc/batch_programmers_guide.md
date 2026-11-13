@@ -3,7 +3,7 @@
 ## Programmer's Guide
 
     Order Number:       BATCH-PG-0101
-    Software Version:   BATCH Version 1.0.1
+    Software Version:   BATCH Version 2.2.6
     Operating System:   Linux
     Revision/Update:    This is a new manual.
     Date:               29-JUL-2026

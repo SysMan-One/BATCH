@@ -3,7 +3,7 @@
 ## Guide de l'utilisateur
 
     Numéro de commande :   BATCH-UG-0101
-    Version du logiciel :  BATCH version 1.0.1
+    Version du logiciel :  BATCH version 2.2.6
     Système :              Linux
     Révision :             Manuel nouveau
     Date :                 21-AOÛ-2026

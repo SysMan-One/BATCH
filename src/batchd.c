@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X.02-02ECO05
-**  REV:		02.02.05
+**  IDENT:		X.02-02ECO06
+**  REV:		02.02.06
 **
 **  FACILITY:		BATCH
 **
@@ -268,6 +268,10 @@
 **	12-NOV-2026	RRL	X.02-02ECO05	S_BATCHD$JOB_START: its comment lists every variable a job is given
 **				(BATCH_RESTART, BATCH_RESTARTS were missing) and says that the rest of the
 **				environment is inherited from the controller on purpose. No change of code.
+**
+**	13-NOV-2026	RRL	X.02-02ECO06	Revision raised with the product: the version in the banner %BATCH-S-IDENT
+**				and in SHOW /MANAGER (BATCH$K_VERSION) is now made of the ident, 2.2.6; it said
+**				1.0.1, the version given to PROJECT() and never moved. No change of code.
 **--
 */
 
@@ -308,8 +312,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X.02-02ECO05"
-#define	__REV__		"02.02.05"
+#define	__IDENT__	"X.02-02ECO06"
+#define	__REV__		"02.02.06"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/

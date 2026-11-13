@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X.02-02ECO05
-#  REV:			02.02.05
+#  IDENT:		X.02-02ECO06
+#  REV:			02.02.06
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -173,21 +173,54 @@
 #	12-NOV-2026	RRL	X.02-02ECO05	BATCH_K_IDENT raised to X.02-02ECO05, the new form of the ident: the
 #					comment of S_BATCHD$JOB_START names every variable a job is given and
 #					the inherited environment (BATCHD.C X.02-02ECO05). No change of code.
+#
+#	13-NOV-2026	RRL	X.02-02ECO06	BATCH_K_IDENT raised to X.02-02ECO06. The version of the project is made of
+#					BATCH_K_IDENT (X.aa-bbECOcc gives aa.bb.cc without the leading zeros,
+#					X.02-02ECO06 gives 2.2.6): PROJECT() had been given 1.0.1 and it never
+#					moved, so the banner %BATCH-S-IDENT, SHOW /MANAGER and the usage text said
+#					"BATCH 1.0.1 (X.02-02ECO05)". BATCH_K_IDENT is set and checked before
+#					PROJECT() for that, and stays the only place of the ident.
 #--
 #
 
 cmake_minimum_required(VERSION 3.16)
 
+#
+#  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers
+#  and is the one place of the ident: packaging/build.sh and the release workflow read this very line,
+#  and the version of the project is made of it below. It is set before PROJECT() for that reason.
+#
+set(BATCH_K_IDENT	"X.02-02ECO06"	CACHE STRING	"Product revision identification")
+
+#
+#  The version of the project, BATCH_K_VERSION, follows from the ident as the REV of a module does:
+#  X.aa-bbECOcc gives aa.bb.cc, here without the leading zeros (X.02-02ECO06 gives 2.2.6); an ident
+#  without ECO gives cc = 0. The older form X-aa-bb[ECOcc] is taken too, as packaging/build.sh takes
+#  it. MATH() strips the zeros and reads "08" and "09" as decimal.
+#
+if ( NOT BATCH_K_IDENT MATCHES "^X[.-]([0-9]+)-([0-9]+)(ECO([0-9]+))?$" )
+	message(FATAL_ERROR "BATCH_K_IDENT '${BATCH_K_IDENT}' is not X.aa-bb[ECOcc] (nor the old X-aa-bb[ECOcc])")
+endif()
+
+set(BATCH_K_VERPATCH	"${CMAKE_MATCH_4}")
+
+math(EXPR BATCH_K_VERMAJOR	"${CMAKE_MATCH_1}")
+math(EXPR BATCH_K_VERMINOR	"${CMAKE_MATCH_2}")
+
+if ( BATCH_K_VERPATCH STREQUAL "" )
+	set(BATCH_K_VERPATCH	0)
+else()
+	math(EXPR BATCH_K_VERPATCH	"${BATCH_K_VERPATCH}")
+endif()
+
+set(BATCH_K_VERSION	"${BATCH_K_VERMAJOR}.${BATCH_K_VERMINOR}.${BATCH_K_VERPATCH}")
+
 project(BATCH
-	VERSION		1.0.1
+	VERSION		${BATCH_K_VERSION}
 	DESCRIPTION	"Batch execution subsystem for shell scripts, an equivalent of the OpenVMS batch job queue"
 	LANGUAGES	C)
 
-#
-#  Product identification. BATCH_K_IDENT corresponds to the IDENT field in the source module headers.
-#
 set(BATCH_K_FACILITY	"BATCH"		CACHE STRING	"Facility name substituted into $LOG messages")
-set(BATCH_K_IDENT	"X.02-02ECO05"	CACHE STRING	"Product revision identification")
 set(BATCH_K_SPOOLROOT	"/var/spool/batch"
 					CACHE PATH	"Default subsystem root directory")
 set(BATCH_K_SHELL	"/bin/sh"	CACHE FILEPATH	"Command interpreter created for a job")
