@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCH.C
-**  IDENT:		X-02-02ECO02
-**  REV:		02.02.02
+**  IDENT:		X.02-02ECO03
+**  REV:		02.02.03
 **
 **  FACILITY:		BATCH
 **
@@ -211,6 +211,24 @@
 **
 **	 5-NOV-2026	RRL	X-02-02ECO02	S_BATCH$SHOW_FULL: the owner is found by UTIL$GETPW, not GETPWUID (a static image
 **				must not ask the name service).
+**
+**	13-NOV-2026	RRL	X.02-02ECO03	S_BATCH$USAGE: BATCH with no arguments, run by a path of 16 characters or more
+**				(/opt/batch/bin/batch is 20), answered %BATCH-E-BUFOVF instead of its usage: the whole text was
+**				formatted at once into the 1024 bytes of UTIL$PUT, the path repeated ten times
+**				over. The image is now named by the last element of its path, as a verb is, and
+**				the text is written a line at a time; the status of every line is checked.
+**
+**				The same check is made where the value of a qualifier or an argument lands in a
+**				buffer of fixed size. /USER and /ENTRY were copied by __UTIL$ASC2STR, which takes
+**				no size, into fields of 64 bytes from values of up to 255: a longer value ran over
+**				the fields that follow. They are copied by UTIL$MKFSPEC now, and a value that does
+**				not fit is refused. The list of entries is kept in BATCH$K_PATHSZ bytes, as the
+**				parameter it comes from is, not BATCH$K_CPUSZ: DELETE of a list of more than 63
+**				characters said BUFOVF, did nothing and exited with success. A BATCH_ROOT, a script,
+**				a list, or a value of /NAME, /QUEUE or /CPU that does not fit ends the command: each
+**				had been reported and then passed over - for the default root, the default queue,
+**				the name of the script or no affinity at all - and an overlong script was reported
+**				as NOPARAM besides.
 **--
 */
 
@@ -250,8 +268,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCH"
-#define	__IDENT__	"X-02-02ECO02"
-#define	__REV__		"02.02.02"
+#define	__IDENT__	"X.02-02ECO03"
+#define	__REV__		"02.02.03"
 
 #define	BATCH$K_MINABBR	2				/* Shortest admissible abbreviation of a qualifier 			*/
 
@@ -261,7 +279,7 @@
 typedef struct batch_clictx_t {
 	unsigned int	cc_showflg;			/* Combination of the SHOW$M_* indicators 				*/
 	unsigned int	cc_entry;
-	char		cc_entrystr [BATCH$K_CPUSZ];		/* /ENTRY as written: a list, not a number		*/
+	char		cc_entrystr [BATCH$K_PATHSZ];		/* /ENTRY as written: a list, not a number		*/
 
 	int		cc_hold;			/* The /HOLD qualifier was given 					*/
 	int		cc_nohold;			/* The /NOHOLD qualifier was given 					*/
@@ -442,49 +460,69 @@ static	CLI_VERB	s_verbs [] =
 static	char	g_root [BATCH$K_PATHSZ] = BATCH$K_DEFROOT;
 
 /*
+**  The summary of the command format, one line of output to an element. A line names the image at
+**  most once, so that what it may grow by is the length of one file name and no more.
+*/
+static	const char *	s_usage [] = {
+	"Usage:\n",
+	"  !AZ submit <script.sh> [/NAME=name] [/QUEUE=queue] [/AFTER=time] [/HOLD]\n",
+	"                        [/PRIORITY=n] [/PARAMETERS=(p1,...)] [/LOG_FILE=file]\n",
+	"                        [/KEEP] [/RESTART] [/CPU=list] [/USER=name]\n",
+	"                        [/RETAIN=ALWAYS|ERROR|NEVER]\n",
+	"  !AZ show [entry] [/ALL] [/FULL] [/EVERYONE] [/PAGE] [/QUEUE=queue]\n",
+	"  !AZ delete <entry-list>\n",
+	"  !AZ release <entry-list>\n",
+	"  !AZ sync <entry> [/TIMEOUT=seconds]\n",
+	"  !AZ queue <name> /PAUSE | /RESUME\n",
+	"  !AZ purge [/QUEUE=queue] [/CONFIRM]\n",
+	"  !AZ set entry <entry-list> [/PRIORITY=n] [/AFTER=time | /NOAFTER] [/HOLD | /NOHOLD]\n",
+	"                           [/NAME=name] [/RETAIN=kw] [/[NO]KEEP] [/[NO]RESTART] [/CPU=list]\n",
+	"\n",
+	"Format of /AFTER: \"+[days-]hh[:mm[:ss]]\", dd-MMM-yyyy[:hh:mm:ss], NOW, TODAY or TOMORROW.\n",
+	"The subsystem root directory is taken from the environment variable BATCH_ROOT.\n",
+	NULL
+	};
+
+/*
 **++
 **  FUNCTIONAL DESCRIPTION:
 **	Issues the product identification and a summary of the command format.
 **
+**	The image is named by the last element of its specification, as the verb of a command is
+**	named, and the summary is written a line at a time. The whole of it had been formatted at once,
+**	with the specification as given repeated ten times over, and an image run by a path of 16
+**	characters or more made more of it than the working buffer of UTIL$PUT holds: the
+**	utility answered BATCH$_BUFOVF where it should have shown how it is used. A line now carries
+**	one file name at most, which the working buffer holds whatever the path.
+**
 **  INPUT PARAMETERS:
-**	a_prog	- image name taken from the argument vector, not NULL.
+**	a_prog	- image specification taken from the argument vector, not NULL.
 **
 **  OUTPUT PARAMETERS:
 **	None.
 **
 **  RETURNS:
-**	BATCH$_NORMAL.
+**	BATCH$_NORMAL, or the condition of UTIL$PUT for the first line that could not be written.
 **--
 */
 static	int	s_batch$usage (
 			const char *	a_prog
 			)
 {
-	util$put("!AZ !AZ (!AZ), build !AZ\n\n"
-		"Usage:\n"
-		"  !AZ submit <script.sh> [/NAME=name] [/QUEUE=queue] [/AFTER=time] [/HOLD]\n"
-		"                        [/PRIORITY=n] [/PARAMETERS=(p1,...)] [/LOG_FILE=file]\n"
-		"                        [/KEEP] [/RESTART] [/CPU=list] [/USER=name]\n"
-		"                        [/RETAIN=ALWAYS|ERROR|NEVER]\n"
-		"  !AZ show [entry] [/ALL] [/FULL] [/EVERYONE] [/PAGE] [/QUEUE=queue]\n"
-		"  !AZ delete <entry-list>\n"
-		"  !AZ release <entry-list>\n"
-		"  !AZ sync <entry> [/TIMEOUT=seconds]\n"
-		"  !AZ queue <name> /PAUSE | /RESUME\n"
-		"  !AZ purge [/QUEUE=queue] [/CONFIRM]\n"
-		"  !AZ set entry <entry-list> [/PRIORITY=n] [/AFTER=time | /NOAFTER] [/HOLD | /NOHOLD]\n"
-		"                           [/NAME=name] [/RETAIN=kw] [/[NO]KEEP] [/[NO]RESTART] [/CPU=list]\n"
-		"\n"
-		"Format of /AFTER: \"+[days-]hh[:mm[:ss]]\", dd-MMM-yyyy[:hh:mm:ss], NOW, TODAY or TOMORROW.\n"
-		"The subsystem root directory is taken from the environment variable BATCH_ROOT.\n",
-		(const fao_prm_t []) { (fao_prm_t) BATCH$K_FACILITY, (fao_prm_t) BATCH$K_VERSION,
-					(fao_prm_t) BATCH$K_IDENT, (fao_prm_t) BATCH$K_BUILDID,
-					(fao_prm_t) a_prog, (fao_prm_t) a_prog,
-					(fao_prm_t) a_prog, (fao_prm_t) a_prog,
-					(fao_prm_t) a_prog, (fao_prm_t) a_prog,
-					(fao_prm_t) a_prog, (fao_prm_t) a_prog }, 12);
+const char *	l_name;
+int		l_sts;
 
-	return	BATCH$_NORMAL;
+	l_name = strrchr(a_prog, '/');
+	l_name = ( (l_name) && (l_name[1]) ) ? l_name + 1 : a_prog;
+
+	l_sts = util$put("!AZ !AZ (!AZ), build !AZ\n\n",
+		(const fao_prm_t []) { (fao_prm_t) BATCH$K_FACILITY, (fao_prm_t) BATCH$K_VERSION,
+					(fao_prm_t) BATCH$K_IDENT, (fao_prm_t) BATCH$K_BUILDID }, 4);
+
+	for ( int l_i = 0; ($IS_SUCCESS(l_sts)) && (s_usage[l_i]); l_i++ )
+		l_sts = util$put(s_usage[l_i], (const fao_prm_t []) { (fao_prm_t) l_name }, 1);
+
+	return	l_sts;
 }
 
 static	int	s_batch$condname (unsigned int a_sts, char *a_buf, size_t a_bufsz);
@@ -674,8 +712,16 @@ int		l_sts, l_ncpu;
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_DUMP], NULL)) )
 		a_ctx->cc_dump = 1;
 
+	/*
+	**  The value of a qualifier runs to 255 characters and the fields it is kept in are shorter,
+	**  so it is copied with its length checked: __UTIL$ASC2STR copies whatever the value holds.
+	*/
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_USER], &l_val)) )
-		__util$asc2str(&l_val, a_ctx->cc_user);
+		{
+		if ( $IS_FAILURE(l_sts = util$mkfspec(a_ctx->cc_user, sizeof(a_ctx->cc_user), "!AC",
+				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1)) )
+			return	l_sts;
+		}
 
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_PAGE], NULL)) )
 		a_ctx->cc_page = 1;
@@ -710,15 +756,25 @@ int		l_sts, l_ncpu;
 		if ( $IS_FAILURE(util$parse_cpulist($ASCPTR(&l_val), &l_cpus, &l_ncpu)) )
 			return	$PUTMSG_FAO(BATCH$_IVCPU, $ASCPTR(&l_val));
 
-		util$mkfspec(a_ctx->cc_cpus, sizeof(a_ctx->cc_cpus), "!AC",
-				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1);
+		if ( $IS_FAILURE(l_sts = util$mkfspec(a_ctx->cc_cpus, sizeof(a_ctx->cc_cpus), "!AC",
+				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1)) )
+			return	l_sts;
 		}
 
+	/* A value that does not fit is refused: the default name or queue would be taken in its place */
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_NAME], &l_val)) )
-		util$mkfspec(a_ctx->cc_name, sizeof(a_ctx->cc_name), "!AC", (const fao_prm_t []) { (fao_prm_t) &l_val }, 1);
+		{
+		if ( $IS_FAILURE(l_sts = util$mkfspec(a_ctx->cc_name, sizeof(a_ctx->cc_name), "!AC",
+				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1)) )
+			return	l_sts;
+		}
 
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_QUEUE], &l_val)) )
-		util$mkfspec(a_ctx->cc_queue, sizeof(a_ctx->cc_queue), "!AC", (const fao_prm_t []) { (fao_prm_t) &l_val }, 1);
+		{
+		if ( $IS_FAILURE(l_sts = util$mkfspec(a_ctx->cc_queue, sizeof(a_ctx->cc_queue), "!AC",
+				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1)) )
+			return	l_sts;
+		}
 
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_PRIORITY], &l_val)) )
 		{
@@ -728,7 +784,9 @@ int		l_sts, l_ncpu;
 
 	if ( $IS_SUCCESS(__cli$get_value(a_clictx, &s_quals[QUAL$K_ENTRY], &l_val)) )
 		{
-		__util$asc2str(&l_val, a_ctx->cc_entrystr);
+		if ( $IS_FAILURE(l_sts = util$mkfspec(a_ctx->cc_entrystr, sizeof(a_ctx->cc_entrystr), "!AC",
+				(const fao_prm_t []) { (fao_prm_t) &l_val }, 1)) )
+			return	l_sts;
 
 		a_ctx->cc_entry = (unsigned int) strtoul(a_ctx->cc_entrystr, NULL, 10);
 		}
@@ -2667,7 +2725,7 @@ BATCH$CLICTX	l_ctx;
 CLI_CTX *	l_clictx = NULL;
 const char *	l_env, *l_extra = NULL;
 char **		l_argv;
-char		l_script [BATCH$K_PATHSZ], l_entlist [BATCH$K_CPUSZ] = {0};
+char		l_script [BATCH$K_PATHSZ], l_entlist [BATCH$K_PATHSZ] = {0};
 int		l_i, l_np, l_nq, l_sts, l_isqual, l_verb, l_isset, l_subv;
 
 	memset(&l_ctx, 0, sizeof(l_ctx));
@@ -2679,8 +2737,12 @@ int		l_i, l_np, l_nq, l_sts, l_isqual, l_verb, l_isset, l_subv;
 
 	l_env = getenv("BATCH_ROOT");
 
-	if ( l_env )
-		util$mkfspec(g_root, sizeof(g_root), "!AZ", (const fao_prm_t []) { (fao_prm_t) l_env }, 1);
+	/*
+	**  A root that does not fit is refused rather than passed over: the default root would be taken
+	**  in its place, and the command would go to a controller other than the one it was meant for.
+	*/
+	if ( (l_env) && ($IS_FAILURE(util$mkfspec(g_root, sizeof(g_root), "!AZ", (const fao_prm_t []) { (fao_prm_t) l_env }, 1))) )
+		return	EXIT_FAILURE;
 
 	if ( a_argc < 2 )
 		{
@@ -2752,10 +2814,11 @@ int		l_i, l_np, l_nq, l_sts, l_isqual, l_verb, l_isset, l_subv;
 			continue;
 			}
 
-		if ( !(l_np++) )
-			util$mkfspec(l_script, sizeof(l_script), "!AZ",
-					(const fao_prm_t []) { (fao_prm_t) a_argv[l_i] }, 1);
-		else	l_extra = a_argv[l_i];
+		if ( (l_np++) )
+			l_extra = a_argv[l_i];
+		else if ( $IS_FAILURE(util$mkfspec(l_script, sizeof(l_script), "!AZ",
+					(const fao_prm_t []) { (fao_prm_t) a_argv[l_i] }, 1)) )
+			return	EXIT_FAILURE;
 		}
 
 	/* Every verb of this command takes at most one parameter */
@@ -2791,12 +2854,17 @@ int		l_i, l_np, l_nq, l_sts, l_isqual, l_verb, l_isset, l_subv;
 	**  that was given, which takes precedence. It is kept as written rather than reduced to a
 	**  number here, a list of one being a list all the same.
 	*/
+	l_sts = BATCH$_NORMAL;
+
 	if ( l_ctx.cc_entrystr[0] )
-		util$mkfspec(l_entlist, sizeof(l_entlist), "!AZ",
+		l_sts = util$mkfspec(l_entlist, sizeof(l_entlist), "!AZ",
 				(const fao_prm_t []) { (fao_prm_t) l_ctx.cc_entrystr }, 1);
 	else if ( (l_script[0]) && ((isdigit((unsigned char) l_script[0])) || (l_script[0] == '(')) )
-		util$mkfspec(l_entlist, sizeof(l_entlist), "!AZ",
+		l_sts = util$mkfspec(l_entlist, sizeof(l_entlist), "!AZ",
 				(const fao_prm_t []) { (fao_prm_t) l_script }, 1);
+
+	if ( $IS_FAILURE(l_sts) )
+		return	EXIT_FAILURE;
 
 	if ( (!l_ctx.cc_entry) && (l_entlist[0]) )
 		l_ctx.cc_entry = (unsigned int) strtoul(l_entlist, NULL, 10);

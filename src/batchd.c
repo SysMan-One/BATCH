@@ -1,8 +1,8 @@
 /*
 **++
 **  MODULE:		BATCHD.C
-**  IDENT:		X.02-02ECO06
-**  REV:		02.02.06
+**  IDENT:		X.02-02ECO07
+**  REV:		02.02.07
 **
 **  FACILITY:		BATCH
 **
@@ -272,6 +272,10 @@
 **	13-NOV-2026	RRL	X.02-02ECO06	Revision raised with the product: the version in the banner %BATCH-S-IDENT
 **				and in SHOW /MANAGER (BATCH$K_VERSION) is now made of the ident, 2.2.6; it said
 **				1.0.1, the version given to PROJECT() and never moved. No change of code.
+**
+**	13-NOV-2026	RRL	X.02-02ECO07	Revision raised with the product (2.2.7) for BATCH.C X.02-02ECO03: the usage
+**				text of BATCH by a long path, and the values of /USER and /ENTRY copied with
+**				their length checked. No change of code.
 **--
 */
 
@@ -312,8 +316,8 @@
 #undef	__REV__
 
 #define	__MODULE__	"BATCHD"
-#define	__IDENT__	"X.02-02ECO06"
-#define	__REV__		"02.02.06"
+#define	__IDENT__	"X.02-02ECO07"
+#define	__REV__		"02.02.07"
 
 #define	BATCHD$K_JRNNAME	"journal.dat"		/* File name of the queue journal 					*/
 #define	BATCHD$K_QUENAME	"queues.dat"		/* File the states of the queues are kept in 				*/

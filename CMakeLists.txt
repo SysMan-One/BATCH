@@ -1,7 +1,7 @@
 #++
 #  MODULE:		CMakeLists.txt (top level)
-#  IDENT:		X.02-02ECO06
-#  REV:			02.02.06
+#  IDENT:		X.02-02ECO07
+#  REV:			02.02.07
 #
 #  FACILITY:		BATCH - batch execution subsystem for shell scripts, a functional equivalent of
 #			the OpenVMS batch job queue (SUBMIT / SHOW QUEUE).
@@ -180,6 +180,10 @@
 #					moved, so the banner %BATCH-S-IDENT, SHOW /MANAGER and the usage text said
 #					"BATCH 1.0.1 (X.02-02ECO05)". BATCH_K_IDENT is set and checked before
 #					PROJECT() for that, and stays the only place of the ident.
+#
+#	13-NOV-2026	RRL	X.02-02ECO07	BATCH_K_IDENT raised to X.02-02ECO07, version 2.2.7: BATCH with no arguments
+#					by a long path answered BUFOVF instead of its usage, and the values of
+#					/USER and /ENTRY could run over their fields (BATCH.C X.02-02ECO03).
 #--
 #
 
@@ -190,7 +194,7 @@ cmake_minimum_required(VERSION 3.16)
 #  and is the one place of the ident: packaging/build.sh and the release workflow read this very line,
 #  and the version of the project is made of it below. It is set before PROJECT() for that reason.
 #
-set(BATCH_K_IDENT	"X.02-02ECO06"	CACHE STRING	"Product revision identification")
+set(BATCH_K_IDENT	"X.02-02ECO07"	CACHE STRING	"Product revision identification")
 
 #
 #  The version of the project, BATCH_K_VERSION, follows from the ident as the REV of a module does:

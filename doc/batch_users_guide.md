@@ -3,7 +3,7 @@
 ## User's Guide
 
     Order Number:       BATCH-UG-0102
-    Software Version:   BATCH Version 2.2.6
+    Software Version:   BATCH Version 2.2.7
     Operating System:   Linux
     Revision/Update:    This manual supersedes the edition of 28-JUL-2026.
     Date:               29-JUL-2026
